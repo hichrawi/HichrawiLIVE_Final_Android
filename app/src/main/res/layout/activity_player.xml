@@ -10,16 +10,14 @@
         android:layout_height="match_parent"
         android:keepScreenOn="true" />
 
-    <!-- Channel-specific HICHRAWI watermark.
-         It uses the logo URL configured for this channel in Admin and sits over
-         the broadcaster logo area instead of creating/replacing any artwork. -->
+    <!-- Channel-specific HICHRAWI watermark: large and aligned with the broadcaster logo. -->
     <ImageView
         android:id="@+id/channelLogo"
-        android:layout_width="110dp"
-        android:layout_height="110dp"
+        android:layout_width="170dp"
+        android:layout_height="100dp"
         android:layout_gravity="top|end"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="12dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="4dp"
         android:adjustViewBounds="true"
         android:scaleType="fitCenter"
         android:visibility="gone"
