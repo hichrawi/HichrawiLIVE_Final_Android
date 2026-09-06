@@ -6,7 +6,7 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import android.graphics.BitmapFactory
-import android.graphics.Color
+import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
@@ -40,11 +40,14 @@ class PlayerActivity : AppCompatActivity() {
         findViewById<View>(R.id.playerBack).setOnClickListener { finish() }
         message.text = intent.getStringExtra("channel_name").orEmpty()
         // Use the HICHRAWI logo assigned to this channel in Admin.
-        // The channel list passes logo_url, so each channel keeps its own branding.
-        logo.setImageResource(R.drawable.hichrawi_live_logo)
-        logo.visibility = View.VISIBLE
+        // It is intentionally an overlay on top of the broadcaster logo area.
         val logoUrl = intent.getStringExtra("logo_url")
-        if (!logoUrl.isNullOrBlank()) loadWatermark(logoUrl)
+        if (!logoUrl.isNullOrBlank()) {
+            loadWatermark(logoUrl)
+        } else {
+            logo.setImageResource(R.drawable.hichrawi_live_logo)
+            logo.visibility = View.VISIBLE
+        }
         startPlayback()
     }
 
@@ -56,10 +59,43 @@ class PlayerActivity : AppCompatActivity() {
                     if (!response.isSuccessful) return@use
                     val bytes = response.body?.bytes() ?: return@use
                     val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
-                    withContext(Dispatchers.Main) { logo.setImageBitmap(bmp) }
+                    val cropped = cropTransparentBorders(bmp)
+                    withContext(Dispatchers.Main) {
+                        logo.setImageBitmap(cropped)
+                        logo.visibility = View.VISIBLE
+                    }
                 }
             } catch (_: Exception) { }
         }
+    }
+
+    private fun cropTransparentBorders(source: Bitmap): Bitmap {
+        if (!source.hasAlpha()) return source
+        val w = source.width
+        val h = source.height
+        var left = w
+        var top = h
+        var right = -1
+        var bottom = -1
+        for (y in 0 until h step 2) {
+            for (x in 0 until w step 2) {
+                val a = (source.getPixel(x, y) ushr 24) and 0xFF
+                if (a > 12) {
+                    if (x < left) left = x
+                    if (x > right) right = x
+                    if (y < top) top = y
+                    if (y > bottom) bottom = y
+                }
+            }
+        }
+        if (right < left || bottom < top) return source
+        val padX = ((right - left + 1) * 0.04f).toInt()
+        val padY = ((bottom - top + 1) * 0.04f).toInt()
+        left = (left - padX).coerceAtLeast(0)
+        top = (top - padY).coerceAtLeast(0)
+        right = (right + padX).coerceAtMost(w - 1)
+        bottom = (bottom + padY).coerceAtMost(h - 1)
+        return Bitmap.createBitmap(source, left, top, right - left + 1, bottom - top + 1)
     }
 
     private fun startPlayback() {
