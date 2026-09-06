@@ -95,7 +95,7 @@ class ChannelsActivity : AppCompatActivity() {
         search = EditText(this).apply {
             hint = "بحث في القنوات..."
             textSize = 15f
-            singleLine = true
+            setSingleLine(true)
             setTextColor(0xFFFFFFFF.toInt())
             setHintTextColor(0xFF788398.toInt())
             background = getDrawable(R.drawable.bg_input)
