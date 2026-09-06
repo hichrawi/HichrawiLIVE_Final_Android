@@ -1,6 +1,5 @@
 package com.hichrawi.tv
 
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -100,22 +99,6 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadLogo(url: String) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val req = okhttp3.Request.Builder().url(url).build()
-                okhttp3.OkHttpClient().newCall(req).execute().use { r ->
-                    if (!r.isSuccessful) return@use
-                    val bytes = r.body?.bytes() ?: return@use
-                    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
-                    withContext(Dispatchers.Main) {
-                        logo.setImageBitmap(bmp)
-                        logo.visibility = View.VISIBLE
-                    }
-                }
-            } catch (_: Exception) { }
-        }
-    }
 
     override fun onStop() {
         guardJob?.cancel()
