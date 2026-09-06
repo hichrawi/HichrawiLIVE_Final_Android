@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
@@ -37,11 +39,27 @@ class PlayerActivity : AppCompatActivity() {
         message = findViewById(R.id.playerMessage)
         findViewById<View>(R.id.playerBack).setOnClickListener { finish() }
         message.text = intent.getStringExtra("channel_name").orEmpty()
-        // Always use the official HICHRAWI logo as the in-player watermark.
-        // It is positioned over the broadcaster's logo; do not load the source channel logo here.
+        // Use the HICHRAWI logo assigned to this channel in Admin.
+        // The channel list passes logo_url, so each channel keeps its own branding.
         logo.setImageResource(R.drawable.hichrawi_live_logo)
         logo.visibility = View.VISIBLE
+        val logoUrl = intent.getStringExtra("logo_url")
+        if (!logoUrl.isNullOrBlank()) loadWatermark(logoUrl)
         startPlayback()
+    }
+
+    private fun loadWatermark(url: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val request = okhttp3.Request.Builder().url(url).build()
+                okhttp3.OkHttpClient().newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use
+                    val bytes = response.body?.bytes() ?: return@use
+                    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
+                    withContext(Dispatchers.Main) { logo.setImageBitmap(bmp) }
+                }
+            } catch (_: Exception) { }
+        }
     }
 
     private fun startPlayback() {
