@@ -38,7 +38,10 @@ class PlayerActivity : AppCompatActivity() {
         message = findViewById(R.id.playerMessage)
         findViewById<View>(R.id.playerBack).setOnClickListener { finish() }
         message.text = intent.getStringExtra("channel_name").orEmpty()
-        intent.getStringExtra("logo_url")?.let(::loadLogo)
+        // Always use the official HICHRAWI logo as the in-player watermark.
+        // It is positioned over the broadcaster's logo; do not load the source channel logo here.
+        logo.setImageResource(R.drawable.hichrawi_live_logo)
+        logo.visibility = View.VISIBLE
         startPlayback()
     }
 
