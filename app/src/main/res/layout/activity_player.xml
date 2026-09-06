@@ -10,19 +10,20 @@
         android:layout_height="match_parent"
         android:keepScreenOn="true" />
 
-    <!-- HICHRAWI channel logo: top-right over the broadcast logo area -->
+    <!-- HICHRAWI watermark: aligned with the broadcaster logo area (top-right) -->
     <ImageView
         android:id="@+id/channelLogo"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginBottom="24dp"
-        android:layout_marginEnd="24dp"
+        android:layout_width="92dp"
+        android:layout_height="92dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="14dp"
         android:adjustViewBounds="true"
-        android:scaleType="centerInside"
+        android:scaleType="fitCenter"
         android:visibility="gone"
         android:contentDescription="HICHRAWI"
-        android:elevation="20dp" />
+        android:elevation="50dp"
+        android:translationZ="50dp" />
 
     <!-- Always-visible back button -->
     <TextView
