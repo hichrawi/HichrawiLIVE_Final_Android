@@ -36,6 +36,7 @@ class PlayerActivity : AppCompatActivity() {
         playerView = findViewById(R.id.playerView)
         logo = findViewById(R.id.channelLogo)
         message = findViewById(R.id.playerMessage)
+        findViewById<View>(R.id.playerBack).setOnClickListener { finish() }
         message.text = intent.getStringExtra("channel_name").orEmpty()
         intent.getStringExtra("logo_url")?.let(::loadLogo)
         startPlayback()
