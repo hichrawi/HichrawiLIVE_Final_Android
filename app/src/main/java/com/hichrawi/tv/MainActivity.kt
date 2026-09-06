@@ -95,7 +95,7 @@ class MainActivity : AppCompatActivity() {
         codeInput = EditText(this).apply {
             hint = "رمز الاشتراك"; textSize = 22f; gravity = Gravity.CENTER
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
-            filters = arrayOf(InputFilter.LengthFilter(13))
+            filters = arrayOf(InputFilter.LengthFilter(16))
             isSingleLine = true; setTextColor(0xFFFFFFFF.toInt()); setHintTextColor(0xFF69758B.toInt())
             background = getDrawable(R.drawable.bg_input); letterSpacing = 0.10f
             setPadding(18, 0, 18, 0)
@@ -114,9 +114,9 @@ class MainActivity : AppCompatActivity() {
         activateButton.setOnClickListener {
             val entered = codeInput.text.toString().trim().uppercase()
             val code = entered.replace("-", "").replace(" ", "")
-            val validFormat = code == "00000000" || code.matches(Regex("[A-Z0-9]{13}"))
+            val validFormat = code == "00000000" || code.matches(Regex("[A-Z0-9]{12,13}"))
             if (!validFormat) {
-                message.text = "الكود يجب أن يكون 13 حرف/رقم (بدون شرطات)"
+                message.text = "كود اشتراك غير صالح"
                 return@setOnClickListener
             }
             hideKeyboard(); activateButton.isEnabled = false; message.text = "جاري التحقق من الكود..."
