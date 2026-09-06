@@ -24,7 +24,6 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var playerView: PlayerView
     private lateinit var logo: ImageView
     private lateinit var message: TextView
-    private lateinit var backButton: TextView
     private val prefs by lazy { getSharedPreferences("hichrawi", MODE_PRIVATE) }
     private var player: ExoPlayer? = null
     private var guardJob: Job? = null
@@ -37,8 +36,7 @@ class PlayerActivity : AppCompatActivity() {
         playerView = findViewById(R.id.playerView)
         logo = findViewById(R.id.channelLogo)
         message = findViewById(R.id.playerMessage)
-        backButton = findViewById(R.id.playerBack)
-        backButton.setOnClickListener { finish() }
+        findViewById<View>(R.id.playerBack).setOnClickListener { finish() }
         message.text = intent.getStringExtra("channel_name").orEmpty()
         intent.getStringExtra("logo_url")?.let(::loadLogo)
         startPlayback()
