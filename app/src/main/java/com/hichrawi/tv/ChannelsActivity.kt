@@ -61,7 +61,7 @@ class ChannelsActivity : AppCompatActivity() {
         info.text="جاري تحميل القنوات والباقات...";list.removeAllViews()
         lifecycleScope.launch(Dispatchers.IO){
             try{
-                val state=Api.license(this@ChannelsActivity,deviceId);if(state.optJSONObject("subscription")?.optBoolean("active")!=true)throw Exception("الاشتراك غير فعال أو منتهي")
+                val state=Api.license(this@ChannelsActivity,deviceId);if(!isLicenseActive(state))throw Exception("الاشتراك غير فعال أو منتهي")
                 allChannels=Api.channels(this@ChannelsActivity,deviceId);packages=Api.packages(this@ChannelsActivity,deviceId,allChannels)
                 withContext(Dispatchers.Main){info.text="${allChannels.size} قناة متاحة";showChannels()}
             }catch(e:Exception){withContext(Dispatchers.Main){info.text=e.message?:"تعذر تحميل البيانات"}}
@@ -91,12 +91,11 @@ class ChannelsActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val state = Api.license(this@ChannelsActivity, deviceId)
-                val sub = state.optJSONObject("subscription")
-                val active = sub?.optBoolean("active") == true
-                val activated = firstDate(state, "activated_at", "starts_at", "start_at", "created_at")
+                val active = isLicenseActive(state)
+                val activated = firstDate(state, "activated_at", "starts_at", "start_at", "created_at").ifBlank { prefs.getString("activation_recorded_at", "").orEmpty() }
                 val expires = firstDate(state, "expires_at", "expiration_at", "expires")
-                val savedActivation = prefs.getString("activation_recorded_at", "").orEmpty()
-                val activationValue = if (activated.isNotBlank()) activated else savedActivation
+                    .ifBlank { prefs.getString("subscription_expires_at", "").orEmpty() }
+                val activationValue = activated
                 val message = if (active) {
                     "الحالة: فعال\n\nتاريخ التفعيل: ${formatServerDate(activationValue)}\nتاريخ الانتهاء: ${formatServerDate(expires)}"
                 } else {
@@ -113,6 +112,15 @@ class ChannelsActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) { Toast.makeText(this@ChannelsActivity, e.message ?: "تعذر جلب الاشتراك", Toast.LENGTH_LONG).show() }
             }
         }
+    }
+
+    private fun isLicenseActive(obj: org.json.JSONObject): Boolean {
+        val sub = obj.optJSONObject("subscription")
+        if (sub?.optBoolean("active") == true) return true
+        val lic = obj.optJSONObject("license")
+        if (lic?.optString("status").equals("active", true)) return true
+        if (obj.optString("status").equals("active", true)) return true
+        return false
     }
 
     private fun firstDate(obj: org.json.JSONObject, vararg keys: String): String {
@@ -147,6 +155,6 @@ class ChannelsActivity : AppCompatActivity() {
     private fun loadImage(url:String,image:ImageView){lifecycleScope.launch(Dispatchers.IO){try{val req=okhttp3.Request.Builder().url(url).build();okhttp3.OkHttpClient().newCall(req).execute().use{r->if(!r.isSuccessful)return@use;val bytes=r.body?.bytes()?:return@use;val bmp=BitmapFactory.decodeByteArray(bytes,0,bytes.size)?:return@use;withContext(Dispatchers.Main){image.setImageBitmap(bmp)}}}catch(_:Exception){}}}
     private fun play(ch:Api.Channel){startActivity(Intent(this,PlayerActivity::class.java).apply{putExtra("channel_id",ch.id);putExtra("channel_name",ch.name);putExtra("logo_url",ch.logoUrl)})}
 
-    override fun onStart(){super.onStart();licenseJob=lifecycleScope.launch{while(true){delay(60000);try{val state=withContext(Dispatchers.IO){Api.license(this@ChannelsActivity,deviceId)};if(state.optJSONObject("subscription")?.optBoolean("active")!=true){startActivity(Intent(this@ChannelsActivity,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish();break}}catch(_:Exception){}}}}
+    override fun onStart(){super.onStart();licenseJob=lifecycleScope.launch{while(true){delay(60000);try{val state=withContext(Dispatchers.IO){Api.license(this@ChannelsActivity,deviceId)};if(!isLicenseActive(state)){startActivity(Intent(this@ChannelsActivity,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish();break}}catch(_:Exception){}}}}
     override fun onStop(){licenseJob?.cancel();licenseJob=null;super.onStop()}
 }
