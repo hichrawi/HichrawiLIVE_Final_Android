@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
@@ -37,11 +39,50 @@ class PlayerActivity : AppCompatActivity() {
         message = findViewById(R.id.playerMessage)
         findViewById<View>(R.id.playerBack).setOnClickListener { finish() }
         message.text = intent.getStringExtra("channel_name").orEmpty()
-        // Always use the official HICHRAWI logo as the in-player watermark.
-        // It is positioned over the broadcaster's logo; do not load the source channel logo here.
-        logo.setImageResource(R.drawable.hichrawi_live_logo)
-        logo.visibility = View.VISIBLE
+        // HICHRAWI SPORT 1..8 use their fixed channel logos.
+        // All other channels keep the logo supplied by Admin.
+        val channelName = intent.getStringExtra("channel_name").orEmpty()
+        val sportLogo = sportLogoFor(channelName)
+        if (sportLogo != 0) {
+            logo.setImageResource(sportLogo)
+            logo.visibility = View.VISIBLE
+        } else {
+            logo.setImageResource(R.drawable.hichrawi_live_logo)
+            logo.visibility = View.VISIBLE
+            val logoUrl = intent.getStringExtra("logo_url")
+            if (!logoUrl.isNullOrBlank()) loadWatermark(logoUrl)
+        }
         startPlayback()
+    }
+
+
+    private fun sportLogoFor(name: String): Int {
+        val n = name.lowercase().replace(" ", "").replace("-", "")
+        return when {
+            n.contains("hichrawisport1") -> R.drawable.hichrawi_sport_1
+            n.contains("hichrawisport2") -> R.drawable.hichrawi_sport_2
+            n.contains("hichrawisport3") -> R.drawable.hichrawi_sport_3
+            n.contains("hichrawisport4") -> R.drawable.hichrawi_sport_4
+            n.contains("hichrawisport5") -> R.drawable.hichrawi_sport_5
+            n.contains("hichrawisport6") -> R.drawable.hichrawi_sport_6
+            n.contains("hichrawisport7") -> R.drawable.hichrawi_sport_7
+            n.contains("hichrawisport8") -> R.drawable.hichrawi_sport_8
+            else -> 0
+        }
+    }
+
+    private fun loadWatermark(url: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val request = okhttp3.Request.Builder().url(url).build()
+                okhttp3.OkHttpClient().newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use
+                    val bytes = response.body?.bytes() ?: return@use
+                    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
+                    withContext(Dispatchers.Main) { logo.setImageBitmap(bmp) }
+                }
+            } catch (_: Exception) { }
+        }
     }
 
     private fun startPlayback() {
