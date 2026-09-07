@@ -10,16 +10,6 @@
         android:layout_height="match_parent"
         android:keepScreenOn="true" />
 
-    <ImageButton
-        android:id="@+id/playerBack"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
-        android:layout_gravity="top|start"
-        android:layout_margin="22dp"
-        android:background="@android:color/transparent"
-        android:src="@android:drawable/ic_menu_revert"
-        android:contentDescription="رجوع" />
-
     <ImageView
         android:id="@+id/channelLogo"
         android:layout_width="150dp"
@@ -41,5 +31,4 @@
         android:textSize="16sp"
         android:background="#99000000"
         android:padding="20dp" />
-
 </FrameLayout>
