@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
             textSize = 22f
             gravity = Gravity.CENTER
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
-            filters = arrayOf(InputFilter.LengthFilter(13))
+            filters = arrayOf(InputFilter.LengthFilter(32))
             isSingleLine = true
             setTextColor(0xFFFFFFFF.toInt())
             setHintTextColor(0xFF687185.toInt())
@@ -122,8 +122,8 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val id = ensureDevice()
-                    val entered = code
-                    val normalized = entered.replace("-", "").replace(" ", "")
+                    val entered = code.replace(" ", "")
+                    val normalized = entered.replace("-", "")
                     val activation = try {
                         Api.activate(this@MainActivity, entered, id)
                     } catch (first: Exception) {
