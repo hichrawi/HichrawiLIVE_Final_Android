@@ -70,7 +70,7 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val id = ensureDevice(); val state = Api.license(this@MainActivity, id)
-                val active = state.optJSONObject("subscription")?.optBoolean("active") == true
+                val active = isLicenseActive(state)
                 withContext(Dispatchers.Main) { if (active) openChannels() else showActivation() }
             } catch (_: Exception) { withContext(Dispatchers.Main) { showActivation() } }
         }
@@ -111,7 +111,7 @@ class MainActivity : AppCompatActivity() {
         scroll.addView(body); root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f)); setContentView(root)
 
         lifecycleScope.launch(Dispatchers.IO) {
-            try { val id = ensureDevice(); val state = Api.license(this@MainActivity, id); if (state.optJSONObject("subscription")?.optBoolean("active") == true) withContext(Dispatchers.Main) { openChannels() } }
+            try { val id = ensureDevice(); val state = Api.license(this@MainActivity, id); if (isLicenseActive(state)) withContext(Dispatchers.Main) { openChannels() } }
             catch (_: Exception) { }
         }
 
@@ -130,14 +130,28 @@ class MainActivity : AppCompatActivity() {
                         if (normalized != entered) Api.activate(this@MainActivity, normalized, id) else throw first
                     }
                     val state = Api.license(this@MainActivity, id)
-                    if (state.optJSONObject("subscription")?.optBoolean("active") != true) throw Exception("الكود غير فعال أو منتهي")
+                    if (!isLicenseActive(state)) throw Exception("الكود غير فعال أو منتهي")
                     val activationDate = firstDate(activation, "activated_at", "starts_at", "start_at", "created_at")
-                    if (activationDate.isNotBlank()) prefs.edit().putString("activation_recorded_at", activationDate).apply()
+                        .ifBlank { activation.optString("_server_date") }
+                    val activationExpiry = firstDate(activation, "expires_at", "expiration_at", "expires")
+                    prefs.edit().apply {
+                        if (activationDate.isNotBlank()) putString("activation_recorded_at", activationDate)
+                        if (activationExpiry.isNotBlank()) putString("subscription_expires_at", activationExpiry)
+                    }.apply()
                     withContext(Dispatchers.Main) { openChannels() }
                 } catch (e: Exception) { withContext(Dispatchers.Main) { message.text = friendlyError(e.message); activateButton.isEnabled = true } }
             }
         }
         codeInput.requestFocus()
+    }
+
+    private fun isLicenseActive(obj: org.json.JSONObject): Boolean {
+        val sub = obj.optJSONObject("subscription")
+        if (sub?.optBoolean("active") == true) return true
+        val lic = obj.optJSONObject("license")
+        if (lic?.optString("status").equals("active", true)) return true
+        if (obj.optString("status").equals("active", true)) return true
+        return false
     }
 
     private fun firstDate(obj: org.json.JSONObject, vararg keys: String): String {
