@@ -19,15 +19,17 @@ object Api {
         .build()
 
     data class Channel(val id: Long, val name: String, val logoUrl: String?, val sortOrder: Int)
-    data class Package(val id: Long, val name: String, val channelIds: List<Long>, val logoUrl: String? = null)
+    data class Package(val id: Long, val name: String, val channelIds: List<Long>)
 
     private fun request(context: Context, path: String, body: JSONObject? = null, method: String = "GET"): JSONObject {
         val base = AppConfig.apiBase(context)
         val builder = Request.Builder().url(base + path).header("Accept", "application/json")
-        if (body != null) builder.method(method, body.toString().toRequestBody(json)) else builder.method(method, null)
+        if (body != null) builder.method(method, body.toString().toRequestBody(json))
+        else builder.method(method, null)
         client.newCall(builder.build()).execute().use { response ->
             val raw = response.body?.string().orEmpty()
             val obj = try { JSONObject(raw) } catch (_: Exception) { JSONObject() }
+            response.header("Date")?.takeIf { it.isNotBlank() }?.let { obj.put("_server_date", it) }
             if (!response.isSuccessful || (obj.optBoolean("ok", false).not() && !obj.has("subscription"))) {
                 throw Exception(obj.optString("error").ifBlank { "تعذر الاتصال بالخادم" })
             }
@@ -51,13 +53,9 @@ object Api {
         val arr = obj.optJSONArray("channels") ?: return emptyList()
         return (0 until arr.length()).mapNotNull { i ->
             val c = arr.optJSONObject(i) ?: return@mapNotNull null
-            Channel(
-                c.optLong("id"),
-                c.optString("name").ifBlank { c.optString("channel_key", "Channel") },
-                c.optString("logo_url").takeIf { it.isNotBlank() },
-                c.optInt("sort_order", i)
-            )
-        }.filter { it.id > 0 }.sortedWith(compareBy<Channel> { it.sortOrder }.thenBy { it.id })
+            Channel(c.optLong("id"), c.optString("name").ifBlank { c.optString("channel_key", "Channel") },
+                c.optString("logo_url").takeIf { it.isNotBlank() }, c.optInt("sort_order", i))
+        }.sortedWith(compareBy<Channel> { it.sortOrder }.thenBy { it.id })
     }
 
     fun playback(context: Context, deviceId: Long, channelId: Long): String {
@@ -74,28 +72,14 @@ object Api {
             (0 until arr.length()).mapNotNull { i ->
                 val p = arr.optJSONObject(i) ?: return@mapNotNull null
                 val a = p.optJSONArray("channel_ids")
-                val ids = if (a == null) emptyList() else (0 until a.length()).mapNotNull { j -> a.optLong(j).takeIf { it > 0 } }
-                Package(p.optLong("id", i.toLong()), p.optString("name", "الباقة"), ids,
-                    p.optString("logo_url").takeIf { it.isNotBlank() })
+                val ids = if (a == null) emptyList() else (0 until a.length()).mapNotNull { j -> a.optLong(j).takeIf { id -> id > 0 } }
+                Package(p.optLong("id", i.toLong()), p.optString("name", "الباقة"), ids)
             }
         } catch (_: Exception) { fallbackPackages(channels) }
     }
 
-    fun settings(context: Context, deviceId: Long): AppConfig.AppSettings {
-        return try {
-            val obj = request(context, "/api/v1/app-settings.php?device_id=$deviceId")
-            AppConfig.applyApiSettings(obj)
-            AppConfig.settings()
-        } catch (_: Exception) {
-            AppConfig.settings()
-        }
-    }
-
     private fun fallbackPackages(channels: List<Channel>): List<Package> {
-        val sports = channels.filter {
-            it.name.contains("sport", true) || it.name.contains("سبورت", true) ||
-                it.name.contains("رياض", true)
-        }
+        val sports = channels.filter { it.name.contains("sport", true) || it.name.contains("سبورت", true) || it.name.contains("رياض", true) }
         val result = mutableListOf<Package>()
         if (sports.isNotEmpty()) result += Package(1, "الباقة الرياضية", sports.map { it.id })
         if (channels.isNotEmpty()) result += Package(2, "الباقة الكاملة", channels.map { it.id })
