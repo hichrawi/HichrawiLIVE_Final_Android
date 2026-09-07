@@ -1,6 +1,5 @@
 package com.hichrawi.tv
 
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -35,26 +34,29 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player)
         playerView = findViewById(R.id.playerView)
         logo = findViewById(R.id.channelLogo)
+        message = findViewById(R.id.playerMessage)
+        findViewById<View>(R.id.playerBack).setOnClickListener { finish() }
+        message.text = intent.getStringExtra("channel_name").orEmpty()
+        // Always use the official HICHRAWI logo as the in-player watermark.
+        // It is positioned over the broadcaster's logo; do not load the source channel logo here.
         logo.setImageResource(R.drawable.hichrawi_live_logo)
         logo.visibility = View.VISIBLE
-        message = findViewById(R.id.playerMessage)
-        message.text = intent.getStringExtra("channel_name").orEmpty()
-        intent.getStringExtra("logo_url")?.let(::loadLogo)
         startPlayback()
     }
 
     private fun startPlayback() {
         val deviceId = prefs.getLong("server_device_id", 0L)
         val channelId = intent.getLongExtra("channel_id", 0L)
+        val directUrl = intent.getStringExtra("direct_url")
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val state = Api.license(this@PlayerActivity, deviceId)
-                if (!isLicenseActive(state))
+                if (state.optJSONObject("subscription")?.optBoolean("active") != true)
                     throw Exception("الاشتراك غير فعال")
-                val url = Api.playback(this@PlayerActivity, deviceId, channelId)
+                val url = if (!directUrl.isNullOrBlank()) directUrl else Api.playback(this@PlayerActivity, deviceId, channelId)
                 withContext(Dispatchers.Main) { prepare(url) }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { message.text = e.message ?: "تعذر تشغيل القناة" }
+                withContext(Dispatchers.Main) { message.text = e.message ?: "تعذر تشغيل المحتوى" }
             }
         }
     }
@@ -87,7 +89,7 @@ class PlayerActivity : AppCompatActivity() {
                 delay(60_000)
                 try {
                     val state = withContext(Dispatchers.IO) { Api.license(this@PlayerActivity, deviceId) }
-                    if (!isLicenseActive(state)) {
+                    if (state.optJSONObject("subscription")?.optBoolean("active") != true) {
                         player?.stop()
                         message.text = "الاشتراك لم يعد فعالاً"
                         break
@@ -97,31 +99,6 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    private fun isLicenseActive(obj: org.json.JSONObject): Boolean {
-        val sub = obj.optJSONObject("subscription")
-        if (sub?.optBoolean("active") == true) return true
-        val lic = obj.optJSONObject("license")
-        if (lic?.optString("status").equals("active", true)) return true
-        if (obj.optString("status").equals("active", true)) return true
-        return false
-    }
-
-    private fun loadLogo(url: String) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val req = okhttp3.Request.Builder().url(url).build()
-                okhttp3.OkHttpClient().newCall(req).execute().use { r ->
-                    if (!r.isSuccessful) return@use
-                    val bytes = r.body?.bytes() ?: return@use
-                    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
-                    withContext(Dispatchers.Main) {
-                        logo.setImageBitmap(bmp)
-                        logo.visibility = View.VISIBLE
-                    }
-                }
-            } catch (_: Exception) { }
-        }
-    }
 
     override fun onStop() {
         guardJob?.cancel()
