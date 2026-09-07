@@ -2,8 +2,9 @@ package com.hichrawi.tv
 
 import android.content.Intent
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.os.Bundle
+import java.text.SimpleDateFormat
+import java.util.Locale
 import android.view.Gravity
 import android.view.View
 import android.widget.*
@@ -18,285 +19,72 @@ import kotlinx.coroutines.withContext
 
 class ChannelsActivity : AppCompatActivity() {
     private val prefs by lazy { getSharedPreferences("hichrawi", MODE_PRIVATE) }
-    private lateinit var contentList: LinearLayout
-    private lateinit var title: TextView
-    private lateinit var subtitle: TextView
-    private lateinit var search: EditText
+    private lateinit var list: LinearLayout
+    private lateinit var info: TextView
+    private lateinit var tabChannels: Button
+    private lateinit var tabPackages: Button
     private var deviceId = 0L
     private var licenseJob: Job? = null
     private var allChannels: List<Api.Channel> = emptyList()
     private var packages: List<Api.Package> = emptyList()
-    private var settings = AppConfig.AppSettings()
-    private var currentSection = "live"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = 0xFF070A12.toInt()
-        window.navigationBarColor = 0xFF070A12.toInt()
-        deviceId = prefs.getLong("server_device_id", 0L)
-        buildUi()
-        loadData()
+        window.statusBarColor = 0xFF07090D.toInt(); window.navigationBarColor = 0xFF07090D.toInt()
+        deviceId = prefs.getLong("server_device_id", 0L); buildUi(); loadData()
     }
 
-    private fun text(value: String, size: Float, color: Int = 0xFFFFFFFF.toInt(), bold: Boolean = false) =
-        TextView(this).apply {
-            text = value
-            textSize = size
-            setTextColor(color)
-            gravity = Gravity.CENTER_VERTICAL
-            if (bold) setTypeface(typeface, android.graphics.Typeface.BOLD)
-        }
+    private fun tv(s:String, size:Float, color:Int=0xFFFFFFFF.toInt(), bold:Boolean=false)=TextView(this).apply{ text=s;textSize=size;setTextColor(color);gravity=Gravity.CENTER; if(bold)setTypeface(typeface,android.graphics.Typeface.BOLD)}
 
     private fun buildUi() {
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xFF070A12.toInt())
-            setPadding(18, 12, 18, 12)
-        }
-
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val logo = ImageView(this).apply {
-            setImageResource(R.drawable.hichrawi_live_logo)
-            scaleType = ImageView.ScaleType.CENTER_INSIDE
-        }
-        header.addView(logo, LinearLayout.LayoutParams(70, 70))
-
-        val names = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_VERTICAL }
-        title = text("HICHRAWI LIVE", 22f, bold = true)
-        subtitle = text("قنوات مباشرة", 12f, 0xFF9EA9BC.toInt())
-        names.addView(title, LinearLayout.LayoutParams(0, 34, 1f))
-        names.addView(subtitle, LinearLayout.LayoutParams(0, 28, 1f))
-        header.addView(names, LinearLayout.LayoutParams(0, 70, 1f))
-
-        val refresh = Button(this).apply {
-            text = "↻"
-            textSize = 23f
-            isAllCaps = false
-            setTextColor(0xFFFFFFFF.toInt())
-            background = getDrawable(R.drawable.bg_tab)
-            contentDescription = "تحديث"
-            setOnClickListener { loadData() }
-        }
-        header.addView(refresh, LinearLayout.LayoutParams(58, 58))
-        root.addView(header)
-
-        search = EditText(this).apply {
-            hint = "بحث في القنوات..."
-            textSize = 15f
-            setSingleLine(true)
-            setTextColor(0xFFFFFFFF.toInt())
-            setHintTextColor(0xFF788398.toInt())
-            background = getDrawable(R.drawable.bg_input)
-            setPadding(18, 0, 18, 0)
-            visibility = View.VISIBLE
-            addTextChangedListener(object : android.text.TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { if (currentSection == "live") renderLive() }
-                override fun afterTextChanged(s: android.text.Editable?) = Unit
-            })
-        }
-        root.addView(search, LinearLayout.LayoutParams(-1, 58).apply { setMargins(0, 5, 0, 8) })
-
-        val tabs = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val channels = Button(this).apply {
-            text = "القنوات"
-            isAllCaps = false
-            background = getDrawable(R.drawable.bg_tab)
-            setOnClickListener { currentSection = "live"; search.visibility = View.VISIBLE; renderLive() }
-        }
-        val packagesButton = Button(this).apply {
-            text = "الباقات"
-            isAllCaps = false
-            background = getDrawable(R.drawable.bg_tab)
-            setOnClickListener { currentSection = "packages"; search.visibility = View.GONE; renderPackages() }
-        }
-        val contact = Button(this).apply {
-            text = "تواصل"
-            isAllCaps = false
-            background = getDrawable(R.drawable.bg_tab)
-            setOnClickListener { showContact() }
-        }
-        tabs.addView(channels, LinearLayout.LayoutParams(0, 52, 1f).apply { setMargins(0, 0, 4, 0) })
-        tabs.addView(packagesButton, LinearLayout.LayoutParams(0, 52, 1f).apply { setMargins(4, 0, 4, 0) })
-        tabs.addView(contact, LinearLayout.LayoutParams(0, 52, 1f).apply { setMargins(4, 0, 0, 0) })
-        root.addView(tabs)
-
-        val scroll = ScrollView(this).apply { isFillViewport = true }
-        contentList = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(2, 10, 2, 24)
-        }
-        scroll.addView(contentList)
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-
-        val footer = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        val fav = Button(this).apply {
-            text = "☆ المفضلة"
-            isAllCaps = false
-            background = getDrawable(R.drawable.bg_tab)
-            setOnClickListener { currentSection = "favorites"; search.visibility = View.VISIBLE; renderFavorites() }
-        }
-        footer.addView(fav, LinearLayout.LayoutParams(0, 52, 1f).apply { setMargins(0, 3, 4, 0) })
-        val account = Button(this).apply {
-            text = "الاشتراك"
-            isAllCaps = false
-            background = getDrawable(R.drawable.bg_tab)
-            setOnClickListener { showSubscription() }
-        }
-        footer.addView(account, LinearLayout.LayoutParams(0, 52, 1f).apply { setMargins(4, 3, 0, 0) })
-        root.addView(footer)
-
+        val root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(0xFF07090D.toInt());setPadding(18,14,18,14)}
+        val head=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL}
+        val logo=ImageView(this).apply{setImageResource(R.drawable.hichrawi_live_logo);scaleType=ImageView.ScaleType.CENTER_INSIDE}
+        head.addView(logo,LinearLayout.LayoutParams(62,62)); head.addView(tv("HICHRAWI LIVE",22f,0xFFFFFFFF.toInt(),true),LinearLayout.LayoutParams(0,62,1f))
+        val subscription=Button(this).apply{text="الاشتراك";textSize=13f;isAllCaps=false;setTextColor(0xFFFFFFFF.toInt());background=getDrawable(R.drawable.bg_tab);setOnClickListener{showSubscription()}}
+        head.addView(subscription,LinearLayout.LayoutParams(105,58).apply{setMargins(4,0,4,0)})
+        val refresh=Button(this).apply{text="↻";textSize=22f;isAllCaps=false;setOnClickListener{loadData()}}
+        head.addView(refresh,LinearLayout.LayoutParams(58,58)); root.addView(head)
+        root.addView(tv("شاهد قنواتك مباشرة",14f,0xFFAEB6C5.toInt()),LinearLayout.LayoutParams(-1,36))
+        val tabs=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;setPadding(0,8,0,8)}
+        tabChannels=Button(this).apply{text="القنوات";isAllCaps=false;setTextColor(0xFFFFFFFF.toInt());background=getDrawable(R.drawable.bg_tab);isSelected=true;setOnClickListener{selectTab(true)}}
+        tabPackages=Button(this).apply{text="الباقات";isAllCaps=false;setTextColor(0xFFFFFFFF.toInt());background=getDrawable(R.drawable.bg_tab);setOnClickListener{selectTab(false)}}
+        tabs.addView(tabChannels,LinearLayout.LayoutParams(0,56,1f).apply{setMargins(0,0,6,0)});tabs.addView(tabPackages,LinearLayout.LayoutParams(0,56,1f).apply{setMargins(6,0,0,0)});root.addView(tabs)
+        info=tv("جاري التحميل...",14f,0xFFAEB6C5.toInt());root.addView(info,LinearLayout.LayoutParams(-1,42))
+        val scroll=ScrollView(this);list=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(2,8,2,30)};scroll.addView(list);root.addView(scroll,LinearLayout.LayoutParams(-1,0,1f))
         setContentView(root)
     }
 
-    private fun loadData() {
-        contentList.removeAllViews()
-        addLoading()
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val state = Api.license(this@ChannelsActivity, deviceId)
-                if (state.optJSONObject("subscription")?.optBoolean("active") != true) throw Exception("الاشتراك غير فعال أو منتهي")
-                settings = Api.settings(this@ChannelsActivity, deviceId)
-                allChannels = Api.channels(this@ChannelsActivity, deviceId)
-                packages = Api.packages(this@ChannelsActivity, deviceId, allChannels)
-                withContext(Dispatchers.Main) {
-                    title.text = settings.appName
-                    subtitle.text = "قنوات مباشرة"
-                    if (settings.maintenance) showMessage(settings.maintenanceMessage) else renderLive()
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) { showMessage(e.message ?: "تعذر تحميل البيانات") }
-            }
+    private fun selectTab(channels:Boolean){tabChannels.isSelected=channels;tabPackages.isSelected=!channels; if(channels)showChannels() else showPackages()}
+
+    private fun loadData(){
+        info.text="جاري تحميل القنوات والباقات...";list.removeAllViews()
+        lifecycleScope.launch(Dispatchers.IO){
+            try{
+                val state=Api.license(this@ChannelsActivity,deviceId);if(state.optJSONObject("subscription")?.optBoolean("active")!=true)throw Exception("الاشتراك غير فعال أو منتهي")
+                allChannels=Api.channels(this@ChannelsActivity,deviceId);packages=Api.packages(this@ChannelsActivity,deviceId,allChannels)
+                withContext(Dispatchers.Main){info.text="${allChannels.size} قناة متاحة";showChannels()}
+            }catch(e:Exception){withContext(Dispatchers.Main){info.text=e.message?:"تعذر تحميل البيانات"}}
         }
     }
 
-    private fun addLoading() = contentList.addView(text("جاري تحميل المحتوى...", 16f, 0xFFA9B2C5.toInt()), LinearLayout.LayoutParams(-1, 110))
+    private fun showChannels(){list.removeAllViews();info.text="${allChannels.size} قناة متاحة";allChannels.forEach(::addChannel)}
 
-    private fun showMessage(msg: String) {
-        contentList.removeAllViews()
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(20, 30, 20, 30) }
-        box.addView(text(msg, 17f, 0xFFA9B2C5.toInt(), true), LinearLayout.LayoutParams(-1, 110))
-        contentList.addView(box)
-    }
+    private fun showPackages(){list.removeAllViews(); if(packages.isEmpty()){list.addView(tv("لا توجد باقات إضافية حالياً",16f,0xFFAEB6C5.toInt()),LinearLayout.LayoutParams(-1,80));return};packages.forEach{p->
+        val card=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;background=getDrawable(R.drawable.bg_card);setPadding(20,18,20,18);isFocusable=true;isClickable=true}
+        card.addView(tv(p.name,21f,0xFFFFFFFF.toInt(),true),LinearLayout.LayoutParams(-1,42));card.addView(tv("${p.channelIds.size} قناة",14f,0xFFAEB6C5.toInt()),LinearLayout.LayoutParams(-1,36));
+        val b=Button(this).apply{text="عرض القنوات";isAllCaps=false;setTextColor(0xFFFFFFFF.toInt());background=getDrawable(R.drawable.bg_button);setOnClickListener{showPackageChannels(p)}};card.addView(b,LinearLayout.LayoutParams(-1,56));list.addView(card,LinearLayout.LayoutParams(-1,-2).apply{setMargins(0,0,0,12)})
+    }}
 
-    private fun renderLive() {
-        contentList.removeAllViews()
-        val query = search.text.toString().trim()
-        val filtered = allChannels.filter { query.isBlank() || it.name.contains(query, true) }
-        contentList.addView(text("${settings.homeLiveTitle}  •  ${filtered.size} قناة", 19f, bold = true), LinearLayout.LayoutParams(-1, 50))
-        if (filtered.isEmpty()) { showMessage(if (query.isBlank()) "لا توجد قنوات متاحة حالياً" else "لا توجد نتائج للبحث"); return }
-        filtered.forEach(::addChannel)
-    }
+    private fun showPackageChannels(p:Api.Package){val ids=p.channelIds.toSet();val old=allChannels;allChannels=old.filter{it.id in ids};selectTab(true);allChannels=old}
 
-    private fun renderFavorites() {
-        contentList.removeAllViews()
-        val query = search.text.toString().trim()
-        val favorites = allChannels.filter { isFavorite(it.id) && (query.isBlank() || it.name.contains(query, true)) }
-        contentList.addView(text("القنوات المفضلة  •  ${favorites.size}", 19f, bold = true), LinearLayout.LayoutParams(-1, 50))
-        if (favorites.isEmpty()) { showMessage("لم تضف أي قناة إلى المفضلة بعد"); return }
-        favorites.forEach(::addChannel)
-    }
-
-    private fun renderPackages() {
-        contentList.removeAllViews()
-        contentList.addView(text("الباقات", 21f, bold = true), LinearLayout.LayoutParams(-1, 52))
-        if (packages.isEmpty()) { showMessage("لا توجد باقات متاحة حالياً"); return }
-        packages.forEach { p ->
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                background = getDrawable(R.drawable.bg_card)
-                setPadding(18, 16, 18, 16)
-                isFocusable = true
-            }
-            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-            p.logoUrl?.let { url ->
-                val image = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_INSIDE }
-                row.addView(image, LinearLayout.LayoutParams(76, 60)); loadImage(url, image)
-            }
-            row.addView(text(p.name, 21f, bold = true), LinearLayout.LayoutParams(0, 60, 1f).apply { setMargins(12, 0, 0, 0) })
-            card.addView(row)
-            card.addView(text("${p.channelIds.size} قناة", 14f, 0xFFA9B2C5.toInt()), LinearLayout.LayoutParams(-1, 32))
-            val b = Button(this).apply { text = "عرض القنوات"; isAllCaps = false; background = getDrawable(R.drawable.bg_button); setOnClickListener { showPackageChannels(p) } }
-            card.addView(b, LinearLayout.LayoutParams(-1, 54))
-            contentList.addView(card, LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, 0, 0, 12) })
-        }
-    }
-
-    private fun showPackageChannels(p: Api.Package) {
-        search.visibility = View.GONE
-        currentSection = "packages"
-        val selected = allChannels.filter { it.id in p.channelIds.toSet() }
-        contentList.removeAllViews()
-        contentList.addView(text(p.name, 21f, bold = true), LinearLayout.LayoutParams(-1, 52))
-        val back = Button(this).apply { text = "← كل الباقات"; isAllCaps = false; background = getDrawable(R.drawable.bg_tab); setOnClickListener { renderPackages() } }
-        contentList.addView(back, LinearLayout.LayoutParams(-1, 50).apply { setMargins(0, 0, 0, 10) })
-        if (selected.isEmpty()) { showMessage("لا توجد قنوات في هذه الباقة"); return }
-        selected.forEach(::addChannel)
-    }
-
-    private fun addChannel(ch: Api.Channel) {
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = getDrawable(R.drawable.bg_card)
-            setPadding(12, 9, 10, 9)
-            isFocusable = true
-            isClickable = true
-        }
-        val logo = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_INSIDE; contentDescription = ch.name }
-        card.addView(logo, LinearLayout.LayoutParams(82, 72))
-        val middle = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_VERTICAL; setPadding(12, 0, 8, 0) }
-        middle.addView(text(ch.name, 18f, bold = true), LinearLayout.LayoutParams(-1, 39))
-        middle.addView(text("LIVE • بث مباشر", 12f, 0xFF7BD7AD.toInt()), LinearLayout.LayoutParams(-1, 28))
-        card.addView(middle, LinearLayout.LayoutParams(0, 72, 1f))
-        val star = Button(this).apply {
-            text = if (isFavorite(ch.id)) "★" else "☆"
-            textSize = 20f
-            isAllCaps = false
-            background = getDrawable(R.drawable.bg_tab)
-            setOnClickListener {
-                toggleFavorite(ch.id)
-                text = if (isFavorite(ch.id)) "★" else "☆"
-            }
-        }
-        card.addView(star, LinearLayout.LayoutParams(52, 54).apply { setMargins(3, 0, 3, 0) })
-        val watch = Button(this).apply {
-            text = "مشاهدة"
-            isAllCaps = false
-            textSize = 14f
-            setTextColor(0xFFFFFFFF.toInt())
-            background = getDrawable(R.drawable.bg_button)
-            setOnClickListener { play(ch) }
-        }
-        card.addView(watch, LinearLayout.LayoutParams(105, 54))
-        card.setOnClickListener { play(ch) }
-        ch.logoUrl?.let { loadImage(it, logo) }
-        contentList.addView(card, LinearLayout.LayoutParams(-1, 94).apply { setMargins(0, 0, 0, 11) })
-    }
-
-    private fun showContact() {
-        val s = settings.social
-        val links = listOf(
-            Triple("🔵 Facebook", s.facebook, s.facebookEnabled),
-            Triple("🎵 TikTok", s.tiktok, s.tiktokEnabled),
-            Triple("🟢 WhatsApp", s.whatsapp, s.whatsappEnabled)
-        ).filter { it.third && it.second.isNotBlank() }
-        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(22, 18, 22, 10) }
-        box.addView(text("تواصل معنا", 22f, bold = true), LinearLayout.LayoutParams(-1, 52))
-        if (links.isEmpty()) box.addView(text("لا توجد وسائل تواصل مفعلة حالياً", 15f, 0xFFA9B2C5.toInt()), LinearLayout.LayoutParams(-1, 70))
-        links.forEach { item ->
-            val b = Button(this).apply {
-                text = item.first
-                isAllCaps = false
-                background = getDrawable(R.drawable.bg_button)
-                setOnClickListener { openSocial(item.first, item.second) }
-            }
-            box.addView(b, LinearLayout.LayoutParams(-1, 56).apply { setMargins(0, 0, 0, 8) })
-        }
-        AlertDialog.Builder(this).setView(box).setNegativeButton("إغلاق", null).show()
+    private fun addChannel(ch:Api.Channel){
+        val card=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;background=getDrawable(R.drawable.bg_card);isFocusable=true;isClickable=true;setPadding(12,10,12,10)}
+        val logo=ImageView(this).apply{scaleType=ImageView.ScaleType.CENTER_INSIDE;contentDescription=ch.name};card.addView(logo,LinearLayout.LayoutParams(88,76))
+        val middle=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER_VERTICAL;setPadding(14,0,10,0)}
+        middle.addView(tv(ch.name,18f,0xFFFFFFFF.toInt(),true),LinearLayout.LayoutParams(-1,40));middle.addView(tv("LIVE • بث مباشر",12f,0xFF7DD3A7.toInt()),LinearLayout.LayoutParams(-1,30));card.addView(middle,LinearLayout.LayoutParams(0,76,1f))
+        val watch=Button(this).apply{text="مشاهدة";isAllCaps=false;textSize=15f;setTextColor(0xFFFFFFFF.toInt());background=getDrawable(R.drawable.bg_button);setOnClickListener{play(ch)}};card.addView(watch,LinearLayout.LayoutParams(112,56))
+        card.setOnClickListener{play(ch)};ch.logoUrl?.let{loadImage(it,logo)};list.addView(card,LinearLayout.LayoutParams(-1,96).apply{setMargins(0,0,0,12)})
     }
 
     private fun showSubscription() {
@@ -305,11 +93,19 @@ class ChannelsActivity : AppCompatActivity() {
                 val state = Api.license(this@ChannelsActivity, deviceId)
                 val sub = state.optJSONObject("subscription")
                 val active = sub?.optBoolean("active") == true
-                val expires = sub?.optString("expires_at").orEmpty()
+                val activated = firstDate(state, "activated_at", "starts_at", "start_at", "created_at")
+                val expires = firstDate(state, "expires_at", "expiration_at", "expires")
+                val savedActivation = prefs.getString("activation_recorded_at", "").orEmpty()
+                val activationValue = if (activated.isNotBlank()) activated else savedActivation
+                val message = if (active) {
+                    "الحالة: فعال\n\nتاريخ التفعيل: ${formatServerDate(activationValue)}\nتاريخ الانتهاء: ${formatServerDate(expires)}"
+                } else {
+                    "الحالة: غير فعال أو منتهي"
+                }
                 withContext(Dispatchers.Main) {
                     AlertDialog.Builder(this@ChannelsActivity)
-                        .setTitle("الاشتراك")
-                        .setMessage(if (active) "الحالة: فعال\nالانتهاء: $expires" else "الحالة: غير فعال")
+                        .setTitle("معلومات الاشتراك")
+                        .setMessage(message)
                         .setPositiveButton("حسناً", null)
                         .show()
                 }
@@ -319,59 +115,38 @@ class ChannelsActivity : AppCompatActivity() {
         }
     }
 
-    private fun openSocial(name: String, value: String) {
-        val url = if (name.contains("WhatsApp")) {
-            if (value.startsWith("http", true)) value else "https://wa.me/${value.filter { it.isDigit() }}"
-        } else value
-        try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (_: Exception) { }
+    private fun firstDate(obj: org.json.JSONObject, vararg keys: String): String {
+        val subscription = obj.optJSONObject("subscription")
+        val license = obj.optJSONObject("license")
+        for (key in keys) {
+            val a = subscription?.optString(key).orEmpty()
+            if (a.isNotBlank()) return a
+            val b = license?.optString(key).orEmpty()
+            if (b.isNotBlank()) return b
+            val c = obj.optString(key).orEmpty()
+            if (c.isNotBlank()) return c
+        }
+        return ""
     }
 
-    private fun play(ch: Api.Channel) {
-        startActivity(Intent(this, PlayerActivity::class.java).apply {
-            putExtra("channel_id", ch.id)
-            putExtra("channel_name", ch.name)
-            putExtra("logo_url", ch.logoUrl)
-        })
-    }
-
-    private fun loadImage(url: String, image: ImageView) {
-        lifecycleScope.launch(Dispatchers.IO) {
+    private fun formatServerDate(value: String): String {
+        if (value.isBlank()) return "غير متوفر"
+        val formats = listOf(
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US),
+            SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
+        )
+        for (input in formats) {
             try {
-                okhttp3.OkHttpClient().newCall(okhttp3.Request.Builder().url(url).build()).execute().use { r ->
-                    if (!r.isSuccessful) return@use
-                    val bytes = r.body?.bytes() ?: return@use
-                    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
-                    withContext(Dispatchers.Main) { image.setImageBitmap(bmp) }
-                }
+                val date = input.parse(value) ?: continue
+                return SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.US).format(date)
             } catch (_: Exception) { }
         }
+        return value
     }
 
-    private fun isFavorite(id: Long) = prefs.getBoolean("fav_$id", false)
-    private fun toggleFavorite(id: Long) = prefs.edit().putBoolean("fav_$id", !isFavorite(id)).apply()
+    private fun loadImage(url:String,image:ImageView){lifecycleScope.launch(Dispatchers.IO){try{val req=okhttp3.Request.Builder().url(url).build();okhttp3.OkHttpClient().newCall(req).execute().use{r->if(!r.isSuccessful)return@use;val bytes=r.body?.bytes()?:return@use;val bmp=BitmapFactory.decodeByteArray(bytes,0,bytes.size)?:return@use;withContext(Dispatchers.Main){image.setImageBitmap(bmp)}}}catch(_:Exception){}}}
+    private fun play(ch:Api.Channel){startActivity(Intent(this,PlayerActivity::class.java).apply{putExtra("channel_id",ch.id);putExtra("channel_name",ch.name);putExtra("logo_url",ch.logoUrl)})}
 
-    override fun onStart() {
-        super.onStart()
-        licenseJob = lifecycleScope.launch {
-            while (true) {
-                delay(60_000)
-                try {
-                    val state = withContext(Dispatchers.IO) { Api.license(this@ChannelsActivity, deviceId) }
-                    if (state.optJSONObject("subscription")?.optBoolean("active") != true) {
-                        startActivity(Intent(this@ChannelsActivity, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)); finish(); break
-                    }
-                } catch (_: Exception) { }
-            }
-        }
-    }
-
-    override fun onStop() { licenseJob?.cancel(); licenseJob = null; super.onStop() }
-}
-
-private object GradientDrawableFactory {
-    fun rounded(color: Int, radiusDp: Int): android.graphics.drawable.GradientDrawable =
-        android.graphics.drawable.GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = radiusDp * 3f
-        }
+    override fun onStart(){super.onStart();licenseJob=lifecycleScope.launch{while(true){delay(60000);try{val state=withContext(Dispatchers.IO){Api.license(this@ChannelsActivity,deviceId)};if(state.optJSONObject("subscription")?.optBoolean("active")!=true){startActivity(Intent(this@ChannelsActivity,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP));finish();break}}catch(_:Exception){}}}}
+    override fun onStop(){licenseJob?.cancel();licenseJob=null;super.onStop()}
 }
