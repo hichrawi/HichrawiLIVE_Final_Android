@@ -113,8 +113,10 @@ class MainActivity : AppCompatActivity() {
 
         activateButton.setOnClickListener {
             val entered = codeInput.text.toString().trim().uppercase()
-            val code = entered.replace("-", "").replace(" ", "")
-            val validFormat = code == "00000000" || code.matches(Regex("[A-Z0-9]{12,13}"))
+            val normalized = entered.replace("-", "").replace(" ", "")
+            val validFormat = entered == "00000000" ||
+                    entered.matches(Regex("[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}")) ||
+                    normalized.matches(Regex("[A-Z0-9]{12,13}"))
             if (!validFormat) {
                 message.text = "كود اشتراك غير صالح"
                 return@setOnClickListener
@@ -122,7 +124,19 @@ class MainActivity : AppCompatActivity() {
             hideKeyboard(); activateButton.isEnabled = false; message.text = "جاري التحقق من الكود..."
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
-                    val id = ensureDevice(); Api.activate(this@MainActivity, code, id)
+                    val id = ensureDevice()
+                    // The Admin panel creates codes with dashes (e.g. 7ULE-MXKV-DWWS).
+                    // Send the exact code first; if the old API expects the compact form,
+                    // transparently retry once without dashes/spaces.
+                    try {
+                        Api.activate(this@MainActivity, entered, id)
+                    } catch (first: Exception) {
+                        if (normalized != entered) {
+                            Api.activate(this@MainActivity, normalized, id)
+                        } else {
+                            throw first
+                        }
+                    }
                     val state = Api.license(this@MainActivity, id)
                     if (state.optJSONObject("subscription")?.optBoolean("active") != true) throw Exception("الكود غير فعال أو منتهي")
                     withContext(Dispatchers.Main) { openHome() }
