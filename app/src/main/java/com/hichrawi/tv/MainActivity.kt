@@ -129,8 +129,19 @@ class MainActivity : AppCompatActivity() {
                     } catch (first: Exception) {
                         if (normalized != entered) Api.activate(this@MainActivity, normalized, id) else throw first
                     }
-                    val state = Api.license(this@MainActivity, id)
-                    if (!isLicenseActive(state)) throw Exception("الكود غير فعال أو منتهي")
+                    // The activation response is authoritative. Do not reject a successful
+                    // activation because a follow-up license response has another structure.
+                    if (!activation.optBoolean("ok", false)) {
+                        val serverError = activation.optString("error").ifBlank {
+                            activation.optString("message").ifBlank { "فشل التفعيل" }
+                        }
+                        throw Exception(serverError)
+                    }
+                    val activationLicense = activation.optJSONObject("license")
+                    val activationStatus = activationLicense?.optString("status").orEmpty()
+                    if (activationLicense != null && activationStatus.isNotBlank() && !activationStatus.equals("active", true)) {
+                        throw Exception("الكود غير فعال أو منتهي")
+                    }
                     val activationDate = firstDate(activation, "activated_at", "starts_at", "start_at", "created_at")
                         .ifBlank { activation.optString("_server_date") }
                     val activationExpiry = firstDate(activation, "expires_at", "expiration_at", "expires")
