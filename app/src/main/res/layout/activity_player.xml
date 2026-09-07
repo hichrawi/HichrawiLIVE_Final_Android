@@ -21,7 +21,7 @@
         android:scaleType="fitCenter"
         android:visibility="visible"
         android:contentDescription="HICHRAWI"
-        android:translationY="-12dp"
+        android:translationY="-30dp"
         android:elevation="50dp"
         android:translationZ="50dp" />
 
