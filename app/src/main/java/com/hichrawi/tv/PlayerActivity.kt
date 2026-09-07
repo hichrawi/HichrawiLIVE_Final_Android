@@ -1,12 +1,11 @@
 package com.hichrawi.tv
 
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-import android.graphics.BitmapFactory
-import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
@@ -36,81 +35,26 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player)
         playerView = findViewById(R.id.playerView)
         logo = findViewById(R.id.channelLogo)
+        logo.setImageResource(R.drawable.hichrawi_live_logo)
+        logo.visibility = View.VISIBLE
         message = findViewById(R.id.playerMessage)
-        findViewById<View>(R.id.playerBack).setOnClickListener { finish() }
         message.text = intent.getStringExtra("channel_name").orEmpty()
-        // Use the HICHRAWI logo assigned to this channel in Admin.
-        // It is intentionally an overlay on top of the broadcaster logo area.
-        val logoUrl = intent.getStringExtra("logo_url")
-        if (!logoUrl.isNullOrBlank()) {
-            loadWatermark(logoUrl)
-        } else {
-            logo.setImageResource(R.drawable.hichrawi_live_logo)
-            logo.visibility = View.VISIBLE
-        }
+        intent.getStringExtra("logo_url")?.let(::loadLogo)
         startPlayback()
-    }
-
-    private fun loadWatermark(url: String) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val request = okhttp3.Request.Builder().url(url).build()
-                okhttp3.OkHttpClient().newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) return@use
-                    val bytes = response.body?.bytes() ?: return@use
-                    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
-                    val cropped = cropTransparentBorders(bmp)
-                    withContext(Dispatchers.Main) {
-                        logo.setImageBitmap(cropped)
-                        logo.visibility = View.VISIBLE
-                    }
-                }
-            } catch (_: Exception) { }
-        }
-    }
-
-    private fun cropTransparentBorders(source: Bitmap): Bitmap {
-        if (!source.hasAlpha()) return source
-        val w = source.width
-        val h = source.height
-        var left = w
-        var top = h
-        var right = -1
-        var bottom = -1
-        for (y in 0 until h step 2) {
-            for (x in 0 until w step 2) {
-                val a = (source.getPixel(x, y) ushr 24) and 0xFF
-                if (a > 12) {
-                    if (x < left) left = x
-                    if (x > right) right = x
-                    if (y < top) top = y
-                    if (y > bottom) bottom = y
-                }
-            }
-        }
-        if (right < left || bottom < top) return source
-        val padX = ((right - left + 1) * 0.04f).toInt()
-        val padY = ((bottom - top + 1) * 0.04f).toInt()
-        left = (left - padX).coerceAtLeast(0)
-        top = (top - padY).coerceAtLeast(0)
-        right = (right + padX).coerceAtMost(w - 1)
-        bottom = (bottom + padY).coerceAtMost(h - 1)
-        return Bitmap.createBitmap(source, left, top, right - left + 1, bottom - top + 1)
     }
 
     private fun startPlayback() {
         val deviceId = prefs.getLong("server_device_id", 0L)
         val channelId = intent.getLongExtra("channel_id", 0L)
-        val directUrl = intent.getStringExtra("direct_url")
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val state = Api.license(this@PlayerActivity, deviceId)
-                if (state.optJSONObject("subscription")?.optBoolean("active") != true)
+                if (!isLicenseActive(state))
                     throw Exception("الاشتراك غير فعال")
-                val url = if (!directUrl.isNullOrBlank()) directUrl else Api.playback(this@PlayerActivity, deviceId, channelId)
+                val url = Api.playback(this@PlayerActivity, deviceId, channelId)
                 withContext(Dispatchers.Main) { prepare(url) }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { message.text = e.message ?: "تعذر تشغيل المحتوى" }
+                withContext(Dispatchers.Main) { message.text = e.message ?: "تعذر تشغيل القناة" }
             }
         }
     }
@@ -143,7 +87,7 @@ class PlayerActivity : AppCompatActivity() {
                 delay(60_000)
                 try {
                     val state = withContext(Dispatchers.IO) { Api.license(this@PlayerActivity, deviceId) }
-                    if (state.optJSONObject("subscription")?.optBoolean("active") != true) {
+                    if (!isLicenseActive(state)) {
                         player?.stop()
                         message.text = "الاشتراك لم يعد فعالاً"
                         break
@@ -153,6 +97,31 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+    private fun isLicenseActive(obj: org.json.JSONObject): Boolean {
+        val sub = obj.optJSONObject("subscription")
+        if (sub?.optBoolean("active") == true) return true
+        val lic = obj.optJSONObject("license")
+        if (lic?.optString("status").equals("active", true)) return true
+        if (obj.optString("status").equals("active", true)) return true
+        return false
+    }
+
+    private fun loadLogo(url: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val req = okhttp3.Request.Builder().url(url).build()
+                okhttp3.OkHttpClient().newCall(req).execute().use { r ->
+                    if (!r.isSuccessful) return@use
+                    val bytes = r.body?.bytes() ?: return@use
+                    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
+                    withContext(Dispatchers.Main) {
+                        logo.setImageBitmap(bmp)
+                        logo.visibility = View.VISIBLE
+                    }
+                }
+            } catch (_: Exception) { }
+        }
+    }
 
     override fun onStop() {
         guardJob?.cancel()
