@@ -10,16 +10,38 @@
         android:layout_height="match_parent"
         android:keepScreenOn="true" />
 
+    <!-- HICHRAWI watermark: visual top-right when the video is rotated by the device/player -->
     <ImageView
         android:id="@+id/channelLogo"
         android:layout_width="150dp"
         android:layout_height="100dp"
         android:layout_gravity="top|end"
         android:layout_margin="22dp"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:visibility="visible"
+        android:contentDescription="HICHRAWI"
         android:translationY="-12dp"
-        android:scaleType="centerInside"
-        android:visibility="gone"
-        android:contentDescription="شعار القناة" />
+        android:elevation="50dp"
+        android:translationZ="50dp" />
+
+    <!-- Always-visible back button -->
+    <TextView
+        android:id="@+id/playerBack"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_gravity="top|start"
+        android:layout_marginTop="18dp"
+        android:layout_marginStart="18dp"
+        android:gravity="center"
+        android:text="‹"
+        android:textColor="#FFFFFF"
+        android:textSize="40sp"
+        android:textStyle="bold"
+        android:background="#AA000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="رجوع" />
 
     <TextView
         android:id="@+id/playerMessage"
@@ -30,5 +52,5 @@
         android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:background="#99000000"
-        android:padding="20dp" />
+        android:padding="30dp" />
 </FrameLayout>
