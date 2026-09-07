@@ -10,38 +10,16 @@
         android:layout_height="match_parent"
         android:keepScreenOn="true" />
 
-    <!-- Channel-specific HICHRAWI watermark: large and aligned with the broadcaster logo. -->
     <ImageView
         android:id="@+id/channelLogo"
-        android:layout_width="170dp"
+        android:layout_width="150dp"
         android:layout_height="100dp"
         android:layout_gravity="top|end"
-        android:layout_marginTop="4dp"
-        android:layout_marginEnd="4dp"
-        android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
+        android:layout_margin="22dp"
+        android:translationY="-12dp"
+        android:scaleType="centerInside"
         android:visibility="gone"
-        android:contentDescription="HICHRAWI channel watermark"
-        android:elevation="100dp"
-        android:translationZ="100dp" />
-
-    <!-- Always-visible back button -->
-    <TextView
-        android:id="@+id/playerBack"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
-        android:layout_gravity="top|start"
-        android:layout_marginTop="18dp"
-        android:layout_marginStart="18dp"
-        android:gravity="center"
-        android:text="‹"
-        android:textColor="#FFFFFF"
-        android:textSize="40sp"
-        android:textStyle="bold"
-        android:background="#AA000000"
-        android:clickable="true"
-        android:focusable="true"
-        android:contentDescription="رجوع" />
+        android:contentDescription="شعار القناة" />
 
     <TextView
         android:id="@+id/playerMessage"
