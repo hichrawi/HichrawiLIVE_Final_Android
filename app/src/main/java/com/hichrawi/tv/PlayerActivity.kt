@@ -1,12 +1,12 @@
 package com.hichrawi.tv
-
+import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
-import android.widget.Toast
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.FrameLayout
