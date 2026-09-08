@@ -144,7 +144,7 @@ object Api {
         return snap.documents.mapIndexedNotNull { index, doc ->
             val d = doc.data ?: return@mapIndexedNotNull null
             if (d["enabled"] == false) return@mapIndexedNotNull null
-            val id = number(d["channelId"] ?: d["id"]) ?: stableChannelId(doc.id)
+            val id = (number(d["channelId"] ?: d["id"]) ?: stableChannelId(doc.id)).toLong()
             val name = d["name"]?.toString()?.ifBlank { "Channel" } ?: "Channel"
             val logo = (d["logoUrl"] ?: d["logo"])?.toString()?.takeIf { it.isNotBlank() }
             val stream = (d["streamUrl"] ?: d["stream"] ?: d["url"])?.toString()?.takeIf { it.isNotBlank() }
@@ -167,7 +167,7 @@ object Api {
             val result = snap.documents.mapIndexedNotNull { index, doc ->
                 val d = doc.data ?: return@mapIndexedNotNull null
                 val ids = (d["channelIds"] as? List<*>)?.mapNotNull { number(it)?.toLong() }.orEmpty()
-                Package(number(d["packageId"] ?: d["id"]) ?: stableChannelId(doc.id), d["name"]?.toString() ?: "الباقة", ids)
+                Package((number(d["packageId"] ?: d["id"]) ?: stableChannelId(doc.id)).toLong(), d["name"]?.toString() ?: "الباقة", ids)
             }
             if (result.isEmpty()) fallbackPackages(channels) else result
         } catch (_: Exception) { fallbackPackages(channels) }
