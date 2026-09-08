@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
+import android.widget.Toast
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.FrameLayout
@@ -13,7 +14,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
+import androidx.import android.view.KeyEventlifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
