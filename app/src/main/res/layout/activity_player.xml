@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/playerRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
@@ -10,22 +11,20 @@
         android:layout_height="match_parent"
         android:keepScreenOn="true" />
 
-    <!-- HICHRAWI watermark: visual top-right when the video is rotated by the device/player -->
     <ImageView
         android:id="@+id/channelLogo"
         android:layout_width="150dp"
         android:layout_height="100dp"
         android:layout_gravity="top|end"
-        android:layout_margin="22dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="22dp"
         android:adjustViewBounds="true"
         android:scaleType="fitCenter"
         android:visibility="visible"
         android:contentDescription="HICHRAWI"
-        android:translationY="-30dp"
         android:elevation="50dp"
         android:translationZ="50dp" />
 
-    <!-- Always-visible back button -->
     <TextView
         android:id="@+id/playerBack"
         android:layout_width="52dp"
@@ -52,5 +51,5 @@
         android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:background="#99000000"
-        android:padding="30dp" />
+        android:padding="12dp" />
 </FrameLayout>
