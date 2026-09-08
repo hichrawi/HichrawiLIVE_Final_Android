@@ -37,7 +37,7 @@ class ChannelsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = 0xFF07090D.toInt()
         window.navigationBarColor = 0xFF07090D.toInt()
-        deviceId = prefs.getLong("server_device_id", 0L)
+        deviceId = prefs.getLong("firebase_device_id", prefs.getLong("server_device_id", 0L))
         buildUi()
         loadData()
     }

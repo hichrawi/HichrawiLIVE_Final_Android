@@ -103,7 +103,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun startPlayback(channelId: Long) {
-        val deviceId = prefs.getLong("server_device_id", 0L)
+        val deviceId = prefs.getLong("firebase_device_id", prefs.getLong("server_device_id", 0L))
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val state = Api.license(this@PlayerActivity, deviceId)
@@ -161,7 +161,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun startLicenseGuard() {
-        val deviceId = prefs.getLong("server_device_id", 0L)
+        val deviceId = prefs.getLong("firebase_device_id", prefs.getLong("server_device_id", 0L))
         guardJob?.cancel()
         guardJob = lifecycleScope.launch {
             while (true) {
@@ -220,7 +220,7 @@ class PlayerActivity : AppCompatActivity() {
             showPackageOverlay()
             return
         }
-        val deviceId = prefs.getLong("server_device_id", 0L)
+        val deviceId = prefs.getLong("firebase_device_id", prefs.getLong("server_device_id", 0L))
         packageJob?.cancel()
         packageJob = lifecycleScope.launch(Dispatchers.IO) {
             try {

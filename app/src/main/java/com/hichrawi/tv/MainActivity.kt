@@ -83,13 +83,13 @@ class MainActivity : AppCompatActivity() {
         val logo = ImageView(this).apply { setImageResource(R.drawable.hichrawi_live_logo); scaleType = ImageView.ScaleType.CENTER_INSIDE; contentDescription = "HICHRAWI LIVE" }
         body.addView(logo, LinearLayout.LayoutParams(-1, 210))
         body.addView(tv("HICHRAWI LIVE", 28f, 0xFFFFFFFF.toInt(), true), LinearLayout.LayoutParams(-1, 48))
-        body.addView(tv("أدخل رمز الاشتراك للمتابعة", 17f, 0xFFAEB6C5.toInt()), LinearLayout.LayoutParams(-1, 42))
+        body.addView(tv("أدخل رمز الاشتراك للمتابعة — 13 خانة", 17f, 0xFFAEB6C5.toInt()), LinearLayout.LayoutParams(-1, 42))
 
         codeInput = EditText(this).apply {
-            hint = "أدخل كود التفعيل"
+            hint = "أدخل كود التفعيل (13 خانة)"
             textSize = 22f
             gravity = Gravity.CENTER
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
+            inputType = InputType.TYPE_CLASS_TEXT
             filters = arrayOf(InputFilter.LengthFilter(32))
             isSingleLine = true
             setTextColor(0xFFFFFFFF.toInt())
@@ -116,19 +116,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         activateButton.setOnClickListener {
-            val code = codeInput.text.toString().trim().uppercase()
-            if (code.isEmpty()) { message.text = "اكتب كود الاشتراك أولاً"; return@setOnClickListener }
+            val code = codeInput.text.toString().trim().replace(" ", "")
+            val compactCode = code.replace("-", "")
+            if (compactCode.length != 13 || !compactCode.matches(Regex("[A-Za-z0-9]{13}"))) {
+                message.text = "الكود يجب أن يكون 13 خانة (حروف وأرقام)"
+                return@setOnClickListener
+            }
             hideKeyboard(); activateButton.isEnabled = false; message.text = "جاري التحقق من الكود..."
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     val id = ensureDevice()
-                    val entered = code.replace(" ", "")
-                    val normalized = entered.replace("-", "")
-                    val activation = try {
-                        Api.activate(this@MainActivity, entered, id)
-                    } catch (first: Exception) {
-                        if (normalized != entered) Api.activate(this@MainActivity, normalized, id) else throw first
-                    }
+                    val activation = Api.activate(this@MainActivity, compactCode, id)
                     // The activation response is authoritative. Do not reject a successful
                     // activation because a follow-up license response has another structure.
                     if (!activation.optBoolean("ok", false)) {
@@ -191,10 +189,14 @@ class MainActivity : AppCompatActivity() {
     private fun hideKeyboard() { (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(codeInput.windowToken, 0) }
 
     private suspend fun ensureDevice(): Long = withContext(Dispatchers.IO) {
-        val saved = prefs.getLong("server_device_id", 0L); if (saved > 0L) return@withContext saved
+        val saved = prefs.getLong("firebase_device_id", 0L)
+        if (saved > 0L) return@withContext saved
         val androidId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID).orEmpty()
-        val key = prefs.getString("device_key", null) ?: ("android-$androidId-${UUID.randomUUID()}").also { prefs.edit().putString("device_key", it).apply() }
-        Api.registerDevice(this@MainActivity, key).also { prefs.edit().putLong("server_device_id", it).apply() }
+        val key = prefs.getString("device_key", null)
+            ?: ("android-$androidId-${UUID.randomUUID()}").also { prefs.edit().putString("device_key", it).apply() }
+        Api.registerDevice(this@MainActivity, key).also {
+            prefs.edit().putLong("firebase_device_id", it).putLong("server_device_id", it).apply()
+        }
     }
 
     private fun openChannels() { startActivity(Intent(this, ChannelsActivity::class.java)); finish() }

@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function admin() { return signedIn() && request.auth.token.firebase.sign_in_provider == 'password'; }
+
+    match /channels/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if admin();
+    }
+    match /packages/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if admin();
+    }
+    match /settings/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if admin();
+    }
+    match /contact/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if admin();
+    }
+
+    match /subscriptions/{id} {
+      allow get: if signedIn();
+      allow list: if admin();
+      allow create, delete: if admin();
+      allow update: if admin() || (
+        signedIn() &&
+        request.resource.data.durationDays == resource.data.durationDays &&
+        request.resource.data.maxDevices == resource.data.maxDevices &&
+        request.resource.data.code == resource.data.code &&
+        request.resource.data.status == 'active' &&
+        request.resource.data.active == true &&
+        request.resource.data.deviceIds.size() == resource.data.deviceIds.size() + 1 &&
+        request.resource.data.deviceIds.size() <= resource.data.maxDevices &&
+        (resource.data.deviceIds.size() == 0 || request.resource.data.deviceIds.hasAny(resource.data.deviceIds)) &&
+        (
+          (resource.data.active == false && resource.data.status in ['ready', 'unused'] && request.resource.data.activatedAt == request.time) ||
+          (resource.data.active == true && resource.data.status == 'active' && request.resource.data.activatedAt == resource.data.activatedAt)
+        )
+      );
+    }
+
+    match /licenses/{id} {
+      allow get: if admin() || (signedIn() && resource.data.authUid == request.auth.uid);
+      allow list: if admin();
+      allow create: if signedIn() &&
+        request.resource.data.authUid == request.auth.uid &&
+        request.resource.data.active == true &&
+        request.resource.data.activatedAt == request.time &&
+        request.resource.data.deviceKey is string &&
+        request.resource.data.subscriptionId is string &&
+        get(/databases/$(database)/documents/subscriptions/$(request.resource.data.subscriptionId)).data.active == true &&
+        get(/databases/$(database)/documents/subscriptions/$(request.resource.data.subscriptionId)).data.deviceIds.hasAny([request.resource.data.deviceKey]) &&
+        request.resource.data.durationDays == get(/databases/$(database)/documents/subscriptions/$(request.resource.data.subscriptionId)).data.durationDays;
+      allow update, delete: if admin();
+    }
+
+    match /devices/{deviceKey} {
+      allow read, write: if admin();
+    }
+    match /broadcastSources/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if admin();
+    }
+    match /videos/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if admin();
+    }
+    match /playlists/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if admin();
+    }
+  }
+}

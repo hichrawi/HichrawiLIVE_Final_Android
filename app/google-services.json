@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "157073701978",
+    "project_id": "hichrawi-tv-app",
+    "storage_bucket": "hichrawi-tv-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:157073701978:android:d22409af481b860acd2c63",
+        "android_client_info": {
+          "package_name": "com.hichrawi.tv"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNQOHwgrtgFPUO_Y6GXB6bS5w9oLaptp8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
