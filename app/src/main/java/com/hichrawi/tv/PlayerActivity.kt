@@ -130,10 +130,14 @@ class PlayerActivity : AppCompatActivity() {
         val clean = url.substringBefore('?').lowercase()
         val builder = MediaItem.Builder().setUri(Uri.parse(url))
         when {
-            clean.endsWith(".m3u8") || clean.contains("/m3u8") -> builder.setMimeType(MimeTypes.APPLICATION_M3U8)
-            clean.endsWith(".mp4") -> builder.setMimeType(MimeTypes.VIDEO_MP4)
-            clean.endsWith(".mp3") -> builder.setMimeType(MimeTypes.AUDIO_MPEG)
-            clean.endsWith(".aac") -> builder.setMimeType(MimeTypes.AUDIO_AAC)
+            clean.endsWith(".m3u8") || clean.contains("/m3u8") ->
+                builder.setMimeType(MimeTypes.APPLICATION_M3U8)
+            clean.endsWith(".mp4") ->
+                builder.setMimeType(MimeTypes.VIDEO_MP4)
+            clean.endsWith(".mp3") ->
+                builder.setMimeType(MimeTypes.AUDIO_MPEG)
+            clean.endsWith(".aac") ->
+                builder.setMimeType(MimeTypes.AUDIO_AAC)
         }
 
         message.visibility = View.VISIBLE

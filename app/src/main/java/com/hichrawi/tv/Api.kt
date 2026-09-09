@@ -150,7 +150,13 @@ object Api {
             val stream = (d["streamUrl"] ?: d["stream"] ?: d["url"])?.toString()?.takeIf { it.isNotBlank() }
             val sort = number(d["sortOrder"] ?: d["sort_order"])?.toInt() ?: index
             Channel(id, name, logo, sort, stream)
-        }.sortedWith(compareBy<Channel> { it.sortOrder }.thenBy { it.id })
+        }.sortedWith(
+            compareBy<Channel> {
+                Regex("""hichrawisport(\d+)""", RegexOption.IGNORE_CASE)
+                    .find(it.name.replace(" ", ""))?.groupValues?.getOrNull(1)?.toIntOrNull()
+                    ?: it.sortOrder
+            }.thenBy { it.sortOrder }.thenBy { it.id }
+        )
     }
 
     fun playback(context: Context, deviceId: Long, channelId: Long): String {
