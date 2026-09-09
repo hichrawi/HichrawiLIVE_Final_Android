@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "hichrawi-tv-app"
-  }
+  },
+  "targets": {
+    "hichrawi-tv-app": {
+      "hosting": {
+        "main-app": [
+          "hichrawi-tv-app"
+        ],
+        "live-admin": [
+          "hichrawi-live-admin"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

@@ -1,5 +1,16 @@
 {
   "firestore": {
     "rules": "firestore.rules"
-  }
+  },
+  "hosting": [
+    {
+      "target": "main-app",
+      "public": "public"
+    },
+    {
+      "target": "live-admin",
+      "public": "public-live",
+      "cleanUrls": true
+    }
+  ]
 }
