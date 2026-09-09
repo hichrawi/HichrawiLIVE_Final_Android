@@ -21,6 +21,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
@@ -161,8 +162,8 @@ class PlayerActivity : AppCompatActivity() {
         findViewById<View>(R.id.playerBack)?.visibility = View.VISIBLE
 
         val renderersFactory = DefaultRenderersFactory(this)
+            .setMediaCodecSelector(MediaCodecSelector.PREFER_SOFTWARE)
             .setEnableDecoderFallback(true)
-            .forceEnableMediaCodecAsynchronousQueueing()
 
         player = ExoPlayer.Builder(this, renderersFactory)
             .setMediaSourceFactory(mediaSourceFactory)
