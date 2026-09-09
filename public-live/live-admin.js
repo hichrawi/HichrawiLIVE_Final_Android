@@ -118,12 +118,61 @@ async function loadChannels(){
  let html="";
  snap.forEach(x=>{
   const d=x.data();
-  html+=`<tr><td>${d.name||"-"}</td><td dir="ltr">${d.stream||""}</td><td><button class="red" data-chdel="${x.id}">حذف</button></td></tr>`;
+  html+=`<tr>
+   <td>${d.name||"-"}</td>
+   <td dir="ltr">${d.stream||""}</td>
+   <td>
+    <button class="gold" data-chedit="${x.id}">تعديل</button>
+    <button class="red" data-chdel="${x.id}">حذف</button>
+   </td>
+  </tr>`;
  });
  $("channelsTable").innerHTML=html||`<tr><td colspan="3">لا توجد قنوات</td></tr>`;
  $("countChannels").textContent=snap.size;
+
  document.querySelectorAll("[data-chdel]").forEach(b=>b.onclick=async()=>{
-  if(confirm("حذف القناة من التطبيق؟")){await deleteDoc(doc(db,"channels",b.dataset.chdel));await loadChannels();}
+  if(confirm("حذف القناة من التطبيق؟")){
+   await deleteDoc(doc(db,"channels",b.dataset.chdel));
+   await loadChannels();
+  }
+ });
+
+ document.querySelectorAll("[data-chedit]").forEach(b=>b.onclick=async()=>{
+  if(!adminOnly())return;
+
+  const channelRef=doc(db,"channels",b.dataset.chedit);
+  const snap=await getDoc(channelRef);
+
+  if(!snap.exists()){
+   alert("❌ القناة غير موجودة");
+   return;
+  }
+
+  const d=snap.data();
+
+  const name=prompt("اسم القناة:",d.name||"");
+  if(name===null)return;
+
+  const stream=prompt("رابط البث:",d.stream||"");
+  if(stream===null)return;
+
+  if(!name.trim() || !stream.trim()){
+   alert("❌ اسم القناة ورابط البث مطلوبان");
+   return;
+  }
+
+  const logo=prompt("رابط الشعار (يمكن تركه فارغًا):",d.logo||"");
+  if(logo===null)return;
+
+  await updateDoc(channelRef,{
+   name:name.trim(),
+   stream:stream.trim(),
+   logo:logo.trim(),
+   updatedAt:serverTimestamp()
+  });
+
+  $("channelMsg").textContent="✅ تم تعديل القناة دون حذفها";
+  await loadChannels();
  });
 }
 
