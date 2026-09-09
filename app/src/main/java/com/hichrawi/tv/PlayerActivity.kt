@@ -132,7 +132,8 @@ class PlayerActivity : AppCompatActivity() {
         player = null
         val httpFactory = DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
-            .setUserAgent("HICHRAWI-TV/1.0")
+            .setUserAgent("VLC/3.0.21 LibVLC/3.0.21")
+            .setDefaultRequestProperties(mapOf("Accept" to "*/*"))
         val extractorsFactory = DefaultExtractorsFactory()
             .setTsExtractorFlags(
                 DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS or
