@@ -21,6 +21,9 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.extractor.DefaultExtractorsFactory
+import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -30,6 +33,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@OptIn(UnstableApi::class)
 class PlayerActivity : AppCompatActivity() {
     private lateinit var playerView: PlayerView
     private lateinit var logo: ImageView
@@ -126,8 +130,15 @@ class PlayerActivity : AppCompatActivity() {
         guardJob?.cancel()
         player?.release()
         player = null
-        val httpFactory = DefaultHttpDataSource.Factory().setAllowCrossProtocolRedirects(true)
-        val mediaSourceFactory = DefaultMediaSourceFactory(httpFactory)
+        val httpFactory = DefaultHttpDataSource.Factory()
+            .setAllowCrossProtocolRedirects(true)
+            .setUserAgent("HICHRAWI-TV/1.0")
+        val extractorsFactory = DefaultExtractorsFactory()
+            .setTsExtractorFlags(
+                DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS or
+                    DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES
+            )
+        val mediaSourceFactory = DefaultMediaSourceFactory(httpFactory, extractorsFactory)
         val clean = url.substringBefore('?').lowercase()
         val builder = MediaItem.Builder().setUri(Uri.parse(url))
         when {
@@ -139,6 +150,8 @@ class PlayerActivity : AppCompatActivity() {
                 builder.setMimeType(MimeTypes.AUDIO_MPEG)
             clean.endsWith(".aac") ->
                 builder.setMimeType(MimeTypes.AUDIO_AAC)
+            else ->
+                builder.setMimeType(MimeTypes.VIDEO_MP2T)
         }
 
         message.visibility = View.VISIBLE
