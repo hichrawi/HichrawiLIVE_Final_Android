@@ -63,7 +63,7 @@ object Api {
     fun activate(context: Context, code: String, deviceId: Long): org.json.JSONObject {
         ensureAnonymousAuth(context)
         val clean = code.trim().replace(" ", "").replace("-", "")
-        if (!Regex("[A-Za-z0-9]{13}").matches(clean)) throw Exception("كود الاشتراك يجب أن يكون 13 خانة")
+        if (!Regex("[0-9]{8}").matches(clean)) throw Exception("كود الاشتراك يجب أن يكون 8 أرقام")
         val key = deviceKey(context)
         val subId = sha256(clean)
         val licenseId = sha256(key)

@@ -2,7 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function admin() { return signedIn() && request.auth.token.firebase.sign_in_provider == 'password'; }
+    function admin() {
+      return signedIn() &&
+        request.auth.token.firebase.sign_in_provider == 'password' &&
+        request.auth.token.email == 'hichrawi86@gmail.com';
+    }
 
     match /channels/{id} {
       allow read: if signedIn();
@@ -43,7 +47,7 @@ service cloud.firestore {
     }
 
     match /licenses/{id} {
-      allow get: if admin() || (signedIn() && resource.data.authUid == request.auth.uid);
+      allow get: if signedIn();
       allow list: if admin();
       allow create: if signedIn() &&
         request.resource.data.authUid == request.auth.uid &&
@@ -51,9 +55,9 @@ service cloud.firestore {
         request.resource.data.activatedAt == request.time &&
         request.resource.data.deviceKey is string &&
         request.resource.data.subscriptionId is string &&
-        get(/databases/$(database)/documents/subscriptions/$(request.resource.data.subscriptionId)).data.active == true &&
-        get(/databases/$(database)/documents/subscriptions/$(request.resource.data.subscriptionId)).data.deviceIds.hasAny([request.resource.data.deviceKey]) &&
-        request.resource.data.durationDays == get(/databases/$(database)/documents/subscriptions/$(request.resource.data.subscriptionId)).data.durationDays;
+        getAfter(/databases/$(database)/documents/subscriptions/$(request.resource.data.subscriptionId)).data.active == true &&
+        getAfter(/databases/$(database)/documents/subscriptions/$(request.resource.data.subscriptionId)).data.deviceIds.hasAny([request.resource.data.deviceKey]) &&
+        request.resource.data.durationDays == getAfter(/databases/$(database)/documents/subscriptions/$(request.resource.data.subscriptionId)).data.durationDays;
       allow update, delete: if admin();
     }
 
