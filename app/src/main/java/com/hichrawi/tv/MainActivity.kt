@@ -83,10 +83,10 @@ class MainActivity : AppCompatActivity() {
         val logo = ImageView(this).apply { setImageResource(R.drawable.hichrawi_live_logo); scaleType = ImageView.ScaleType.CENTER_INSIDE; contentDescription = "HICHRAWI LIVE" }
         body.addView(logo, LinearLayout.LayoutParams(-1, 210))
         body.addView(tv("HICHRAWI LIVE", 28f, 0xFFFFFFFF.toInt(), true), LinearLayout.LayoutParams(-1, 48))
-        body.addView(tv("أدخل رمز الاشتراك للمتابعة — 13 خانة", 17f, 0xFFAEB6C5.toInt()), LinearLayout.LayoutParams(-1, 42))
+        body.addView(tv("أدخل رمز الاشتراك للمتابعة — 8 أرقام", 17f, 0xFFAEB6C5.toInt()), LinearLayout.LayoutParams(-1, 42))
 
         codeInput = EditText(this).apply {
-            hint = "أدخل كود التفعيل (13 خانة)"
+            hint = "أدخل كود التفعيل (8 أرقام)"
             textSize = 22f
             gravity = Gravity.CENTER
             inputType = InputType.TYPE_CLASS_TEXT
@@ -118,8 +118,8 @@ class MainActivity : AppCompatActivity() {
         activateButton.setOnClickListener {
             val code = codeInput.text.toString().trim().replace(" ", "")
             val compactCode = code.replace("-", "")
-            if (compactCode.length != 13 || !compactCode.matches(Regex("[A-Za-z0-9]{13}"))) {
-                message.text = "الكود يجب أن يكون 13 خانة (حروف وأرقام)"
+            if (compactCode.length != 8 || !compactCode.matches(Regex("[0-9]{8}"))) {
+                message.text = "الكود يجب أن يكون 8 أرقام"
                 return@setOnClickListener
             }
             hideKeyboard(); activateButton.isEnabled = false; message.text = "جاري التحقق من الكود..."
