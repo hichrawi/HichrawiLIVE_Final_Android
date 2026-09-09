@@ -20,6 +20,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
@@ -159,7 +160,11 @@ class PlayerActivity : AppCompatActivity() {
         message.text = currentChannelName
         findViewById<View>(R.id.playerBack)?.visibility = View.VISIBLE
 
-        player = ExoPlayer.Builder(this)
+        val renderersFactory = DefaultRenderersFactory(this)
+            .setEnableDecoderFallback(true)
+            .forceEnableMediaCodecAsynchronousQueueing()
+
+        player = ExoPlayer.Builder(this, renderersFactory)
             .setMediaSourceFactory(mediaSourceFactory)
             .build()
             .also { p ->
