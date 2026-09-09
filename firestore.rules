@@ -50,7 +50,6 @@ service cloud.firestore {
       allow get: if signedIn();
       allow list: if admin();
       allow create: if signedIn() &&
-        request.resource.data.authUid == request.auth.uid &&
         request.resource.data.active == true &&
         request.resource.data.activatedAt == request.time &&
         request.resource.data.deviceKey is string &&

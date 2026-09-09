@@ -82,7 +82,7 @@ object Api {
             val devices = (d["deviceIds"] as? List<*>)?.mapNotNull { it?.toString() }?.toMutableList() ?: mutableListOf()
             val alreadyLinked = devices.contains(key)
             if (status !in listOf("ready", "unused", "active")) throw Exception("كود غير صحيح أو معطل")
-            if (alreadyLinked && licenseSnap.exists() && licenseSnap.data?.get("authUid")?.toString() == uid) {
+            if (alreadyLinked && licenseSnap.exists()) {
                 return@runTransaction mapOf("ok" to true, "durationDays" to ((d["durationDays"] as? Number)?.toLong() ?: 30L), "subscriptionId" to subId)
             }
             if (!alreadyLinked && devices.size >= maxDevices) throw Exception("تم بلوغ الحد الأقصى للأجهزة")
@@ -115,12 +115,11 @@ object Api {
     fun license(context: Context, deviceId: Long): org.json.JSONObject {
         ensureAnonymousAuth(context)
         val key = deviceKey(context)
-        val uid = auth(context).currentUser?.uid ?: return inactiveLicense()
         val licenseId = sha256(key)
         val snap = Tasks.await(db(context).collection("licenses").document(licenseId).get(), 20, TimeUnit.SECONDS)
         if (!snap.exists()) return inactiveLicense()
         val d = snap.data ?: return inactiveLicense()
-        if (d["authUid"]?.toString() != uid || d["deviceKey"]?.toString() != key) return inactiveLicense()
+        if (d["deviceKey"]?.toString() != key) return inactiveLicense()
         val active = d["active"] == true
         val activatedAt = d["activatedAt"] as? com.google.firebase.Timestamp
         val days = (d["durationDays"] as? Number)?.toLong() ?: 30L
