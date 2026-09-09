@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
+import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -155,6 +156,25 @@ class PlayerActivity : AppCompatActivity() {
                     }
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
                         if (isPlaying) hidePlaybackOverlays()
+                    }
+
+                    override fun onPlayerError(error: PlaybackException) {
+                        val cause = error.cause
+                        val details = buildString {
+                            append("ExoPlayer: ")
+                            append(error.errorCodeName)
+                            append("\n")
+                            append(error.message ?: "بدون رسالة")
+                            if (cause != null) {
+                                append("\n")
+                                append(cause.javaClass.simpleName)
+                                append(": ")
+                                append(cause.message ?: "")
+                            }
+                        }
+                        runOnUiThread {
+                            showPlaybackError(details)
+                        }
                     }
                 })
                 p.setMediaItem(builder.build())
