@@ -162,7 +162,15 @@ class PlayerActivity : AppCompatActivity() {
         findViewById<View>(R.id.playerBack)?.visibility = View.VISIBLE
 
         val renderersFactory = DefaultRenderersFactory(this)
-            .setMediaCodecSelector(MediaCodecSelector.PREFER_SOFTWARE)
+            .setMediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
+                MediaCodecSelector.DEFAULT
+                    .getDecoderInfos(
+                        mimeType,
+                        requiresSecureDecoder,
+                        requiresTunnelingDecoder
+                    )
+                    .sortedByDescending { it.softwareOnly }
+            }
             .setEnableDecoderFallback(true)
 
         player = ExoPlayer.Builder(this, renderersFactory)
