@@ -144,18 +144,34 @@ async function loadDevices(){
     const subscriptionId=d.subscriptionId;
     const deviceKey=d.deviceKey;
 
-    // حذف سجل الجهاز فقط
-    await deleteDoc(licenseRef);
-
-    // تحرير الجهاز من الاشتراك حتى يمكن استعمال جهاز آخر
+    // إذا كان الاشتراك موجودًا، نحرر الجهاز منه ثم نحذف الترخيص
     if(subscriptionId && deviceKey){
-     await updateDoc(
-      doc(db,"subscriptions",subscriptionId),
-      {deviceIds:arrayRemove(deviceKey)}
-     );
+     const subscriptionRef=doc(db,"subscriptions",subscriptionId);
+     const subscriptionSnap=await getDoc(subscriptionRef);
+
+     if(subscriptionSnap.exists()){
+      const batch=writeBatch(db);
+
+      batch.update(subscriptionRef,{
+       deviceIds:arrayRemove(deviceKey)
+      });
+
+      batch.delete(licenseRef);
+
+      await batch.commit();
+
+      alert("✅ تم حذف الجهاز وتحرير مكانه من الاشتراك");
+     }else{
+      // الاشتراك غير موجود، لذلك نحذف سجل الترخيص فقط
+      await deleteDoc(licenseRef);
+
+      alert("✅ تم حذف الجهاز");
+     }
+    }else{
+     await deleteDoc(licenseRef);
+     alert("✅ تم حذف الجهاز");
     }
 
-    alert("✅ تم حذف الجهاز وتحرير مكانه من الاشتراك");
     await refresh();
 
    }catch(err){
