@@ -141,7 +141,7 @@ async function loadChannels(){
  $("countChannels").textContent=channels.length;
 
  const oldTable=$("channelsTable");
- const host=oldTable.parentElement;
+ const host=oldTable.closest("div[style*="overflow"]") || oldTable.closest(".panel");
 
  // إنشاء واجهة القنوات الجديدة مرة واحدة فقط
  if(!$("channelSearch")){
