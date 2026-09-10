@@ -159,8 +159,8 @@ async function loadDevices(){
     await refresh();
 
    }catch(err){
-    console.error(err);
-    alert("❌ تعذر حذف الجهاز");
+    console.error("DELETE DEVICE ERROR:", err);
+    alert("❌ تعذر حذف الجهاز\\n\\nالكود: " + (err?.code || "unknown") + "\\nالسبب: " + (err?.message || err));
    }
   };
  });
