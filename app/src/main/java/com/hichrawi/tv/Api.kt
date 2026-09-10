@@ -178,6 +178,22 @@ object Api {
         } catch (_: Exception) { fallbackPackages(channels) }
     }
 
+
+    /** Public app settings stored in Firestore settings/app. */
+    fun settings(context: Context, deviceId: Long): Map<String, String> {
+        ensureAnonymousAuth(context)
+        return try {
+            val snap = Tasks.await(db(context).collection("settings").document("app").get(), 20, TimeUnit.SECONDS)
+            if (!snap.exists()) return emptyMap()
+            snap.data.orEmpty().mapNotNull { (key, value) ->
+                val text = value?.toString()?.trim().orEmpty()
+                if (text.isBlank()) null else key to text
+            }.toMap()
+        } catch (_: Exception) {
+            emptyMap()
+        }
+    }
+
     private fun fallbackPackages(channels: List<Channel>): List<Package> {
         val sports = channels.filter { it.name.contains("sport", true) || it.name.contains("سبورت", true) || it.name.contains("رياض", true) }
         val result = mutableListOf<Package>()

@@ -186,19 +186,32 @@ $("addChannel").onclick=async()=>{
  $("channelMsg").textContent="✅ تمت إضافة القناة";await loadChannels();
 };
 
+
 async function loadSettings(){
  const s=await getDoc(doc(db,"settings","app"));
  if(s.exists()){
   const d=s.data();
   $("appName").value=d.appName||"HICHRAWI LIVE";
   $("welcome").value=d.welcome||"";
+  $("facebook").value=d.facebook||"";
+  $("tiktok").value=d.tiktok||"";
+  $("instagram").value=d.instagram||"";
+  $("youtube").value=d.youtube||"";
+  $("telegram").value=d.telegram||"";
+  $("whatsapp").value=d.whatsapp||"";
  }
 }
 $("saveSettings").onclick=async()=>{
  await setDoc(doc(db,"settings","app"),{
   appName:$("appName").value.trim()||"HICHRAWI LIVE",
   welcome:$("welcome").value.trim(),
+  facebook:$("facebook").value.trim(),
+  tiktok:$("tiktok").value.trim(),
+  instagram:$("instagram").value.trim(),
+  youtube:$("youtube").value.trim(),
+  telegram:$("telegram").value.trim(),
+  whatsapp:$("whatsapp").value.trim(),
   updatedAt:serverTimestamp()
  },{merge:true});
- $("settingsMsg").textContent="✅ تم حفظ الإعدادات";
+ $("settingsMsg").textContent="✅ تم حفظ إعدادات التطبيق وروابط التواصل";
 };
