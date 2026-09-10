@@ -10,7 +10,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/Theme.HichrawiLIVE">
         <activity android:name=".PlayerActivity" android:screenOrientation="landscape" android:exported="false" />
-        <activity android:name=".ChannelsActivity" android:screenOrientation="unspecified" android:exported="false" />
+        <activity android:name=".ChannelsActivity" android:screenOrientation="landscape" android:exported="false" />
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
