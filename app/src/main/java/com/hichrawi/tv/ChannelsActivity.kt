@@ -99,14 +99,14 @@ class ChannelsActivity : AppCompatActivity() {
             text = "‹  رجوع"
             textSize = 17f
             isAllCaps = false
-            setTextColor(text)
+            setTextColor(this@ChannelsActivity.text)
             background = solid(panel2, 12f)
             stateListAnimator = null
             isFocusable = true
             visibility = View.GONE
             setOnFocusChangeListener { v, hasFocus ->
                 v.background = if (hasFocus) solid(gold, 12f) else solid(panel2, 12f)
-                (v as Button).setTextColor(if (hasFocus) 0xFF160B20.toInt() else text)
+                (v as Button).setTextColor(if (hasFocus) 0xFF160B20.toInt() else this@ChannelsActivity.text)
             }
             setOnClickListener { showHome() }
         }
