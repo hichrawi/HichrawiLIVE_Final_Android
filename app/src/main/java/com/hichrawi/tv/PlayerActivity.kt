@@ -4,6 +4,7 @@ import androidx.lifecycle.lifecycleScope
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.content.pm.PackageManager
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
@@ -42,6 +43,9 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var message: TextView
     private lateinit var root: FrameLayout
     private val prefs by lazy { getSharedPreferences("hichrawi", MODE_PRIVATE) }
+    private val isTvDevice by lazy {
+        packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+    }
     private var player: ExoPlayer? = null
     private var guardJob: Job? = null
     private var packageJob: Job? = null
@@ -63,12 +67,27 @@ class PlayerActivity : AppCompatActivity() {
         logo = findViewById(R.id.channelLogo)
         message = findViewById(R.id.playerMessage)
         findViewById<View>(R.id.playerBack)?.setOnClickListener { finish() }
+        findViewById<View>(R.id.playerExit)?.setOnClickListener { finish() }
+        configureDeviceControls()
 
         currentChannelId = intent.getLongExtra("channel_id", 0L)
         currentChannelName = intent.getStringExtra("channel_name").orEmpty()
         message.text = currentChannelName
         setChannelLogo(currentChannelName, intent.getStringExtra("logo_url"))
         startPlayback(currentChannelId)
+    }
+
+    private fun configureDeviceControls() {
+        val back = findViewById<View>(R.id.playerBack)
+        val exit = findViewById<View>(R.id.playerExit)
+
+        if (isTvDevice) {
+            back?.visibility = View.GONE
+            exit?.visibility = View.GONE
+        } else {
+            back?.visibility = View.VISIBLE
+            exit?.visibility = View.VISIBLE
+        }
     }
 
     private fun sportLogoFor(name: String): Int {
@@ -100,13 +119,18 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun hidePlaybackOverlays() {
         message.visibility = View.GONE
-        findViewById<View>(R.id.playerBack)?.visibility = View.GONE
+        findViewById<View>(R.id.playerBack)?.visibility =
+            if (isTvDevice) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.playerExit)?.visibility =
+            if (isTvDevice) View.GONE else View.VISIBLE
     }
 
     private fun showPlaybackError(text: String) {
         message.text = text
         message.visibility = View.VISIBLE
         findViewById<View>(R.id.playerBack)?.visibility = View.VISIBLE
+        findViewById<View>(R.id.playerExit)?.visibility =
+            if (isTvDevice) View.GONE else View.VISIBLE
     }
 
     private fun startPlayback(channelId: Long) {
