@@ -273,6 +273,112 @@ h1{
 رابط التحميل الرسمي سيتم تفعيله عند إصدار النسخة النهائية.
 </div>
 
+
+<div style="margin-top:30px;text-align:center;">
+  <h2 style="margin-bottom:10px;">HICHRAWI SPORT</h2>
+  <p style="color:#bdb5c8;line-height:1.8;">قنوات HichrawiSport المتوفرة داخل التطبيق</p>
+
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px;">
+
+    <div style="background:#0d0912;border:1px solid rgba(193,108,255,.18);border-radius:16px;padding:10px;">
+      <img src="assets/hichrawi_sport_1.png"
+           alt="Hichrawi Sport 1"
+           style="width:100%;height:auto;display:block;border-radius:10px;">
+    </div>
+
+    <div style="background:#0d0912;border:1px solid rgba(193,108,255,.18);border-radius:16px;padding:10px;">
+      <img src="assets/hichrawi_sport_2.png"
+           alt="Hichrawi Sport 2"
+           style="width:100%;height:auto;display:block;border-radius:10px;">
+    </div>
+
+    <div style="background:#0d0912;border:1px solid rgba(193,108,255,.18);border-radius:16px;padding:10px;">
+      <img src="assets/hichrawi_sport_3.png"
+           alt="Hichrawi Sport 3"
+           style="width:100%;height:auto;display:block;border-radius:10px;">
+    </div>
+
+    <div style="background:#0d0912;border:1px solid rgba(193,108,255,.18);border-radius:16px;padding:10px;">
+      <img src="assets/hichrawi_sport_4.png"
+           alt="Hichrawi Sport 4"
+           style="width:100%;height:auto;display:block;border-radius:10px;">
+    </div>
+
+    <div style="background:#0d0912;border:1px solid rgba(193,108,255,.18);border-radius:16px;padding:10px;">
+      <img src="assets/hichrawi_sport_5.png"
+           alt="Hichrawi Sport 5"
+           style="width:100%;height:auto;display:block;border-radius:10px;">
+    </div>
+
+    <div style="background:#0d0912;border:1px solid rgba(193,108,255,.18);border-radius:16px;padding:10px;">
+      <img src="assets/hichrawi_sport_6.png"
+           alt="Hichrawi Sport 6"
+           style="width:100%;height:auto;display:block;border-radius:10px;">
+    </div>
+
+    <div style="background:#0d0912;border:1px solid rgba(193,108,255,.18);border-radius:16px;padding:10px;">
+      <img src="assets/hichrawi_sport_7.png"
+           alt="Hichrawi Sport 7"
+           style="width:100%;height:auto;display:block;border-radius:10px;">
+    </div>
+
+    <div style="background:#0d0912;border:1px solid rgba(193,108,255,.18);border-radius:16px;padding:10px;">
+      <img src="assets/hichrawi_sport_8.png"
+           alt="Hichrawi Sport 8"
+           style="width:100%;height:auto;display:block;border-radius:10px;">
+    </div>
+
+  </div>
+</div>
+
+<div style="margin-top:30px;text-align:center;">
+  <h2>تحميل HICHRAWI LIVE</h2>
+
+  <button class="btn"
+          style="cursor:pointer;opacity:1;border:0;"
+          onclick="generateDownloadCode()">
+    ⬇️ الحصول على كود التحميل
+  </button>
+
+  <div id="downloadCodeBox"
+       style="display:none;margin-top:15px;">
+    <small style="display:block;color:#bdb5c8;margin-bottom:8px;">
+      كود التحميل الخاص بك
+    </small>
+    <div id="downloadCode"
+         class="code"
+         style="font-size:24px;">
+    </div>
+  </div>
+
+  <div style="margin-top:15px;">
+    <a href="#"
+       onclick="return false;"
+       style="display:inline-block;text-decoration:none;color:#fff;
+              background:#111;padding:13px 24px;border-radius:12px;
+              border:1px solid rgba(193,108,255,.25);">
+      ▶ Google Play — قريبًا
+    </a>
+  </div>
+
+  <div class="download-note">
+    سيتم تفعيل رابط Google Play بعد نشر التطبيق رسميًا.
+  </div>
+</div>
+
+<script>
+function generateDownloadCode(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "HICH-";
+  for(let i=0;i<8;i++){
+    code += chars[Math.floor(Math.random()*chars.length)];
+  }
+
+  document.getElementById("downloadCode").textContent = code;
+  document.getElementById("downloadCodeBox").style.display = "block";
+}
+</script>
+
 <div class="activation">
 
 <small>
