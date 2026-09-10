@@ -172,7 +172,12 @@ async function loadDevices(){
      alert("✅ تم حذف الجهاز");
     }
 
-    await refresh();
+    try{
+     await refresh();
+    }catch(refreshErr){
+     console.error("REFRESH AFTER DELETE:", refreshErr);
+     await loadDevices();
+    }
 
    }catch(err){
     console.error("DELETE DEVICE ERROR:", err);
