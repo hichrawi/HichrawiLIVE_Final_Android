@@ -119,10 +119,8 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun hidePlaybackOverlays() {
         message.visibility = View.GONE
-        findViewById<View>(R.id.playerBack)?.visibility =
-            if (isTvDevice) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.playerExit)?.visibility =
-            if (isTvDevice) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.playerBack)?.visibility = View.GONE
+        findViewById<View>(R.id.playerExit)?.visibility = View.GONE
     }
 
     private fun showPlaybackError(text: String) {
@@ -183,7 +181,10 @@ class PlayerActivity : AppCompatActivity() {
 
         message.visibility = View.VISIBLE
         message.text = currentChannelName
-        findViewById<View>(R.id.playerBack)?.visibility = View.VISIBLE
+        findViewById<View>(R.id.playerBack)?.visibility =
+            if (isTvDevice) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.playerExit)?.visibility =
+            if (isTvDevice) View.GONE else View.VISIBLE
 
         val renderersFactory = DefaultRenderersFactory(this)
             .setMediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
