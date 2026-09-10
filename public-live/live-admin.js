@@ -196,13 +196,13 @@ async function loadSettings(){
   $("facebook").value=d.facebook||"";
   $("tiktok").value=d.tiktok||"";
   $("instagram").value=d.instagram||"";
-  $("youtube").value=d.youtube||"";
+  $("website").value=d.website||"";
   $("telegram").value=d.telegram||"";
   $("whatsapp").value=d.whatsapp||"";
   $("facebookEnabled").value=d.facebookEnabled===false ? "false" : "true";
   $("tiktokEnabled").value=d.tiktokEnabled===false ? "false" : "true";
   $("instagramEnabled").value=d.instagramEnabled===false ? "false" : "true";
-  $("youtubeEnabled").value=d.youtubeEnabled===false ? "false" : "true";
+  $("websiteEnabled").value=d.websiteEnabled===false ? "false" : "true";
   $("telegramEnabled").value=d.telegramEnabled===false ? "false" : "true";
   $("whatsappEnabled").value=d.whatsappEnabled===false ? "false" : "true";
  }
@@ -214,13 +214,13 @@ $("saveSettings").onclick=async()=>{
   facebook:$("facebook").value.trim(),
   tiktok:$("tiktok").value.trim(),
   instagram:$("instagram").value.trim(),
-  youtube:$("youtube").value.trim(),
+  website:$("website").value.trim(),
   telegram:$("telegram").value.trim(),
   whatsapp:$("whatsapp").value.trim(),
   facebookEnabled:$("facebookEnabled").value === "true",
   tiktokEnabled:$("tiktokEnabled").value === "true",
   instagramEnabled:$("instagramEnabled").value === "true",
-  youtubeEnabled:$("youtubeEnabled").value === "true",
+  websiteEnabled:$("websiteEnabled").value === "true",
   telegramEnabled:$("telegramEnabled").value === "true",
   whatsappEnabled:$("whatsappEnabled").value === "true",
   updatedAt:serverTimestamp()

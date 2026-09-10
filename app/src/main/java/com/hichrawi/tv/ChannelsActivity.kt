@@ -151,9 +151,6 @@ class ChannelsActivity : AppCompatActivity() {
             gravity = Gravity.CENTER
             setPadding(20, 24, 20, 10)
         }
-        wrap.addView(tv("اختر القسم", 25f, text, true), LinearLayout.LayoutParams(-1, 52))
-        wrap.addView(tv("استعمل الأسهم ثم OK", 14f, muted), LinearLayout.LayoutParams(-1, 34))
-
         val cards = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -309,7 +306,7 @@ class ChannelsActivity : AppCompatActivity() {
 
         val items = listOf(
             Triple("Facebook", "facebook", "f"), Triple("TikTok", "tiktok", "♪"),
-            Triple("Instagram", "instagram", "◎"), Triple("YouTube", "youtube", "▶"),
+            Triple("Instagram", "instagram", "◎"), Triple("WEBSITE / UPDATE", "website", "↗"),
             Triple("Telegram", "telegram", "✈"), Triple("WhatsApp", "whatsapp", "☎")
         ).filter { (_, key, _) -> appSettings["${key}Enabled"]?.equals("false", true) != true }
 
