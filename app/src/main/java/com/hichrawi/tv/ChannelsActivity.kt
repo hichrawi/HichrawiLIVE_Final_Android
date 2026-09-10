@@ -85,7 +85,7 @@ class ChannelsActivity : AppCompatActivity() {
         setPadding(18, 0, 18, 0)
         setOnFocusChangeListener { v, hasFocus ->
             v.background = rounded(if (hasFocus) gold else panel2, 14f)
-            (v as Button).setTextColor(if (hasFocus) 0xFF111111.toInt() else text)
+            (v as Button).setTextColor(if (hasFocus) 0xFF111111.toInt() else this@ChannelsActivity.text)
             v.scaleX = if (hasFocus) 1.03f else 1f
             v.scaleY = if (hasFocus) 1.03f else 1f
         }
