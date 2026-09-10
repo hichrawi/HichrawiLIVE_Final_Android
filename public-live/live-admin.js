@@ -115,65 +115,212 @@ async function loadDevices(){
 
 async function loadChannels(){
  const snap=await getDocs(collection(db,"channels"));
- let html="";
+ let channels=[];
+
  snap.forEach(x=>{
   const d=x.data();
-  html+=`<tr>
-   <td>${d.name||"-"}</td>
-   <td dir="ltr">${d.stream||""}</td>
-   <td>
-    <button class="gold" data-chedit="${x.id}">تعديل</button>
-    <button class="red" data-chdel="${x.id}">حذف</button>
-   </td>
-  </tr>`;
- });
- $("channelsTable").innerHTML=html||`<tr><td colspan="3">لا توجد قنوات</td></tr>`;
- $("countChannels").textContent=snap.size;
-
- document.querySelectorAll("[data-chdel]").forEach(b=>b.onclick=async()=>{
-  if(confirm("حذف القناة من التطبيق؟")){
-   await deleteDoc(doc(db,"channels",b.dataset.chdel));
-   await loadChannels();
-  }
+  channels.push({
+   id:x.id,
+   name:d.name||"",
+   stream:d.stream||"",
+   logo:d.logo||"",
+   status:d.status||"مباشر"
+  });
  });
 
- document.querySelectorAll("[data-chedit]").forEach(b=>b.onclick=async()=>{
-  if(!adminOnly())return;
+ // ترتيب رقمي حسب الرقم الموجود في اسم القناة
+ channels.sort((a,b)=>{
+  const na=(a.name.match(/(\d+)\s*$/)||[])[1];
+  const nb=(b.name.match(/(\d+)\s*$/)||[])[1];
+  if(na && nb) return Number(na)-Number(nb);
+  if(na) return -1;
+  if(nb) return 1;
+  return a.name.localeCompare(b.name,"ar");
+ });
 
-  const channelRef=doc(db,"channels",b.dataset.chedit);
-  const snap=await getDoc(channelRef);
+ $("countChannels").textContent=channels.length;
 
-  if(!snap.exists()){
-   alert("❌ القناة غير موجودة");
-   return;
+ const oldTable=$("channelsTable");
+ const host=oldTable.parentElement;
+
+ // إنشاء واجهة القنوات الجديدة مرة واحدة فقط
+ if(!$("channelSearch")){
+  const search=document.createElement("input");
+  search.id="channelSearch";
+  search.type="search";
+  search.placeholder="🔎 ابحث عن قناة...";
+  search.style.marginBottom="14px";
+  oldTable.closest(".panel").insertBefore(search,host);
+
+  host.innerHTML='<div id="channelsList" class="channels-manager-list"></div>';
+
+  if(!document.getElementById("channelsManagerStyle")){
+   const style=document.createElement("style");
+   style.id="channelsManagerStyle";
+   style.textContent=`
+    .channels-manager-list{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(310px,1fr));
+      gap:12px;
+      max-height:650px;
+      overflow-y:auto;
+      padding:3px;
+    }
+    .channel-manager-card{
+      background:#111;
+      border:1px solid #303030;
+      border-radius:12px;
+      padding:12px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-height:105px;
+    }
+    .channel-manager-logo{
+      width:78px;
+      height:58px;
+      object-fit:contain;
+      border-radius:8px;
+      background:#090909;
+      flex-shrink:0;
+    }
+    .channel-manager-info{
+      min-width:0;
+      flex:1;
+    }
+    .channel-manager-name{
+      font-weight:bold;
+      font-size:17px;
+      color:#fff;
+      margin-bottom:5px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .channel-manager-status{
+      color:#35d68a;
+      font-size:12px;
+      margin-bottom:8px;
+    }
+    .channel-manager-actions{
+      display:flex;
+      gap:5px;
+    }
+    .channel-manager-actions button{
+      padding:7px 10px;
+      font-size:12px;
+    }
+    .channel-number{
+      color:#f0b900;
+      font-weight:bold;
+      margin-left:5px;
+    }
+    @media(max-width:700px){
+      .channels-manager-list{
+       grid-template-columns:1fr;
+      }
+    }
+   `;
+   document.head.appendChild(style);
   }
+ }
 
-  const d=snap.data();
+ const search=$("channelSearch");
+ const list=$("channelsList");
 
-  const name=prompt("اسم القناة:",d.name||"");
-  if(name===null)return;
+ const render=()=>{
+  const term=(search.value||"").trim().toLowerCase();
 
-  const stream=prompt("رابط البث:",d.stream||"");
-  if(stream===null)return;
+  const filtered=channels.filter(ch=>
+   ch.name.toLowerCase().includes(term)
+  );
 
-  if(!name.trim() || !stream.trim()){
-   alert("❌ اسم القناة ورابط البث مطلوبان");
-   return;
-  }
+  list.innerHTML=filtered.length ? filtered.map((ch,index)=>{
+   const number=(ch.name.match(/(\d+)\s*$/)||[])[1] || (index+1);
 
-  const logo=prompt("رابط الشعار (يمكن تركه فارغًا):",d.logo||"");
-  if(logo===null)return;
+   return `
+    <div class="channel-manager-card">
+      ${
+       ch.logo
+       ? `<img class="channel-manager-logo"
+              src="${ch.logo}"
+              alt=""
+              onerror="this.style.visibility='hidden'">`
+       : `<div class="channel-manager-logo"></div>`
+      }
 
-  await updateDoc(channelRef,{
-   name:name.trim(),
-   stream:stream.trim(),
-   logo:logo.trim(),
-   updatedAt:serverTimestamp()
+      <div class="channel-manager-info">
+        <div class="channel-manager-name">
+          <span class="channel-number">#${number}</span>
+          ${ch.name}
+        </div>
+
+        <div class="channel-manager-status">● ${ch.status}</div>
+
+        <div class="channel-manager-actions">
+          <button class="gold" data-chedit="${ch.id}">✏️ تعديل</button>
+          <button class="red" data-chdel="${ch.id}">🗑 حذف</button>
+        </div>
+      </div>
+    </div>
+   `;
+  }).join("") :
+  `<div style="padding:25px;text-align:center;color:#aaa;grid-column:1/-1">
+    لا توجد قنوات مطابقة
+   </div>`;
+
+  document.querySelectorAll("[data-chdel]").forEach(b=>{
+   b.onclick=async()=>{
+    if(confirm("حذف القناة من التطبيق؟")){
+     await deleteDoc(doc(db,"channels",b.dataset.chdel));
+     await loadChannels();
+    }
+   };
   });
 
-  $("channelMsg").textContent="✅ تم تعديل القناة دون حذفها";
-  await loadChannels();
- });
+  document.querySelectorAll("[data-chedit]").forEach(b=>{
+   b.onclick=async()=>{
+    if(!adminOnly())return;
+
+    const channelRef=doc(db,"channels",b.dataset.chedit);
+    const channelSnap=await getDoc(channelRef);
+
+    if(!channelSnap.exists()){
+     alert("❌ القناة غير موجودة");
+     return;
+    }
+
+    const d=channelSnap.data();
+
+    const name=prompt("اسم القناة:",d.name||"");
+    if(name===null)return;
+
+    const stream=prompt("رابط البث:",d.stream||"");
+    if(stream===null)return;
+
+    if(!name.trim() || !stream.trim()){
+     alert("❌ اسم القناة ورابط البث مطلوبان");
+     return;
+    }
+
+    const logo=prompt("رابط الشعار (يمكن تركه كما هو):",d.logo||"");
+    if(logo===null)return;
+
+    await updateDoc(channelRef,{
+     name:name.trim(),
+     stream:stream.trim(),
+     logo:logo.trim(),
+     updatedAt:serverTimestamp()
+    });
+
+    $("channelMsg").textContent="✅ تم تعديل القناة دون تغيير مصدرها";
+    await loadChannels();
+   };
+  });
+ };
+
+ search.oninput=render;
+ render();
 }
 
 $("addChannel").onclick=async()=>{
