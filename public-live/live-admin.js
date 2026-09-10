@@ -199,6 +199,12 @@ async function loadSettings(){
   $("youtube").value=d.youtube||"";
   $("telegram").value=d.telegram||"";
   $("whatsapp").value=d.whatsapp||"";
+  $("facebookEnabled").value=d.facebookEnabled===false ? "false" : "true";
+  $("tiktokEnabled").value=d.tiktokEnabled===false ? "false" : "true";
+  $("instagramEnabled").value=d.instagramEnabled===false ? "false" : "true";
+  $("youtubeEnabled").value=d.youtubeEnabled===false ? "false" : "true";
+  $("telegramEnabled").value=d.telegramEnabled===false ? "false" : "true";
+  $("whatsappEnabled").value=d.whatsappEnabled===false ? "false" : "true";
  }
 }
 $("saveSettings").onclick=async()=>{
@@ -211,6 +217,12 @@ $("saveSettings").onclick=async()=>{
   youtube:$("youtube").value.trim(),
   telegram:$("telegram").value.trim(),
   whatsapp:$("whatsapp").value.trim(),
+  facebookEnabled:$("facebookEnabled").value === "true",
+  tiktokEnabled:$("tiktokEnabled").value === "true",
+  instagramEnabled:$("instagramEnabled").value === "true",
+  youtubeEnabled:$("youtubeEnabled").value === "true",
+  telegramEnabled:$("telegramEnabled").value === "true",
+  whatsappEnabled:$("whatsappEnabled").value === "true",
   updatedAt:serverTimestamp()
  },{merge:true});
  $("settingsMsg").textContent="✅ تم حفظ إعدادات التطبيق وروابط التواصل";

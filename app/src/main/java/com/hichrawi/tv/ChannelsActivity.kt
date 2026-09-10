@@ -76,7 +76,7 @@ class ChannelsActivity : AppCompatActivity() {
         text = label
         textSize = 18f
         isAllCaps = false
-        setTextColor(text)
+        setTextColor(this@ChannelsActivity.text)
         typeface = Typeface.DEFAULT_BOLD
         background = rounded(panel2, 14f)
         isFocusable = true
@@ -138,7 +138,7 @@ class ChannelsActivity : AppCompatActivity() {
             text = "↻  تحديث"
             textSize = 15f
             isAllCaps = false
-            setTextColor(text)
+            setTextColor(this@ChannelsActivity.text)
             background = rounded(panel2, 12f)
             isFocusable = true
             setOnClickListener { loadData() }
@@ -160,7 +160,7 @@ class ChannelsActivity : AppCompatActivity() {
     private fun setActive(menu: Button, pageTitle: String, pageSubtitle: String) {
         listOf(liveMenu, socialMenu, settingsMenu).forEach {
             it.background = rounded(panel2, 14f)
-            it.setTextColor(text)
+            it.setTextColor(this@ChannelsActivity.text)
         }
         menu.background = rounded(gold, 14f)
         menu.setTextColor(0xFF111111.toInt())
@@ -220,7 +220,9 @@ class ChannelsActivity : AppCompatActivity() {
             Triple("WhatsApp", "whatsapp", "التواصل عبر WhatsApp")
         )
 
-        items.forEach { (name, key, desc) ->
+        items.filter { (_, key, _) ->
+            appSettings["${key}Enabled"]?.equals("false", ignoreCase = true) != true
+        }.forEach { (name, key, desc) ->
             val url = appSettings[key].orEmpty()
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
