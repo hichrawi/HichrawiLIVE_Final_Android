@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hichrawi-tv-app.web.app/hichrawi-live/sitemap.xml
