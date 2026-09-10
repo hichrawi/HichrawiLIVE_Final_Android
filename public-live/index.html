@@ -21,6 +21,48 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 .code{font-family:monospace;font-size:20px;color:#f0b900;direction:ltr;display:inline-block}
 .msg{margin:10px 0;color:#f0b900}.danger{color:#ff6961}.ok{color:#35d68a}
 @media(max-width:800px){.cards,.grid{grid-template-columns:1fr}.wrap{padding:12px}}
+
+
+/* تحسين قسم الاشتراكات */
+#subscriptions .grid{
+ grid-template-columns:minmax(260px,0.72fr) minmax(700px,2.28fr);
+ align-items:start;
+}
+
+#subscriptions .subscriptions-list{
+ min-width:0;
+}
+
+#subscriptions .subscriptions-table{
+ width:100%;
+ min-width:850px;
+ table-layout:auto;
+}
+
+#subscriptions .subscriptions-table th,
+#subscriptions .subscriptions-table td{
+ white-space:nowrap;
+ padding:10px 9px;
+ vertical-align:middle;
+}
+
+#subscriptions .subscriptions-table th{
+ font-size:14px;
+}
+
+#subscriptions .subscriptions-table td{
+ font-size:14px;
+}
+
+#subscriptions .subscriptions-table .code{
+ font-size:18px;
+}
+
+@media(max-width:1100px){
+ #subscriptions .grid{
+  grid-template-columns:1fr;
+ }
+}
 </style>
 </head>
 <body>
@@ -88,9 +130,18 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 <button class="gold" id="createCode">إنشاء كود 8 أرقام</button>
 <div id="newCode" class="msg"></div>
 </div>
-<div class="panel">
+<div class="panel subscriptions-list">
 <h2>الأكواد</h2>
-<div style="overflow:auto"><table><thead><tr><th>الكود</th><th>المدة</th><th>الأجهزة</th><th>الحالة</th><th>إدارة</th></tr></thead>
+<div style="overflow:auto"><table class="subscriptions-table"><thead><tr>
+<th>الكود</th>
+<th>المدة</th>
+<th>الأجهزة</th>
+<th>الحالة</th>
+<th>إنشاء</th>
+<th>التفعيل</th>
+<th>الانتهاء</th>
+<th>إدارة</th>
+</tr></thead>
 <tbody id="subsTable"></tbody></table></div>
 </div>
 </div>

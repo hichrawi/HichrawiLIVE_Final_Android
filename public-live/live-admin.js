@@ -70,7 +70,9 @@ async function loadSubscriptions(){
   const formatDate=(value)=>{
    try{
     const date=value?.toDate?.();
-    return date ? date.toLocaleString("fr-TN") : "-";
+    if(!date) return "-";
+    const pad=n=>String(n).padStart(2,"0");
+    return `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
    }catch(_){return "-";}
   };
 
@@ -78,13 +80,13 @@ async function loadSubscriptions(){
   const activatedDate=d.activatedAt?.toDate?.();
 
   let activatedAt=activatedDate
-   ? activatedDate.toLocaleString("fr-TN")
+   ? formatDate(d.activatedAt)
    : "لم يُفعّل بعد";
 
   let expiresAt="-";
   if(activatedDate && Number(d.durationDays)>0){
    const end=new Date(activatedDate.getTime()+Number(d.durationDays)*24*60*60*1000);
-   expiresAt=end.toLocaleString("fr-TN");
+   expiresAt=formatDate({toDate:()=>end});
   }
 
   html+=`<tr>
