@@ -66,18 +66,42 @@ async function loadSubscriptions(){
   if(d.active)active++;
   const devices=Array.isArray(d.deviceIds)?d.deviceIds.length:0;
   const status=d.status||"ready";
+
+  const formatDate=(value)=>{
+   try{
+    const date=value?.toDate?.();
+    return date ? date.toLocaleString("fr-TN") : "-";
+   }catch(_){return "-";}
+  };
+
+  const createdAt=formatDate(d.createdAt);
+  const activatedDate=d.activatedAt?.toDate?.();
+
+  let activatedAt=activatedDate
+   ? activatedDate.toLocaleString("fr-TN")
+   : "لم يُفعّل بعد";
+
+  let expiresAt="-";
+  if(activatedDate && Number(d.durationDays)>0){
+   const end=new Date(activatedDate.getTime()+Number(d.durationDays)*24*60*60*1000);
+   expiresAt=end.toLocaleString("fr-TN");
+  }
+
   html+=`<tr>
    <td><span class="code">${d.code||x.id}</span></td>
    <td>${d.durationDays||"-"} يوم</td>
    <td>${devices}/${d.maxDevices||1}</td>
    <td>${status}</td>
+   <td>${createdAt}</td>
+   <td>${activatedAt}</td>
+   <td>${expiresAt}</td>
    <td>
     ${d.active?`<button class="gray" data-disable="${x.id}">تعطيل</button>`:`<button class="green" data-enable="${x.id}">تفعيل</button>`}
     <button class="red" data-delete="${x.id}">حذف</button>
    </td>
   </tr>`;
  });
- $("subsTable").innerHTML=html||`<tr><td colspan="5">لا توجد أكواد بعد</td></tr>`;
+ $("subsTable").innerHTML=html||`<tr><td colspan="8">لا توجد أكواد بعد</td></tr>`;
  $("countSubs").textContent=snap.size;
  $("countActive").textContent=active;
  document.querySelectorAll("[data-delete]").forEach(b=>b.onclick=async()=>{
