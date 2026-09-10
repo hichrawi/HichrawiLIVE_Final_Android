@@ -29,11 +29,18 @@
  --muted:#bdb5c8;
 }
 
-*{box-sizing:border-box}
+*{
+ box-sizing:border-box;
+}
 
 body{
  margin:0;
- background:radial-gradient(circle at 50% -10%,#35105c 0,#10091a 38%,var(--bg) 72%);
+ background:radial-gradient(
+   circle at 50% -10%,
+   #35105c 0,
+   #10091a 38%,
+   var(--bg) 72%
+ );
  color:var(--text);
  font-family:Arial,"Segoe UI",sans-serif;
  min-height:100vh;
@@ -57,7 +64,9 @@ body{
  text-shadow:0 0 28px rgba(139,53,255,.45);
 }
 
-.brand span{color:var(--purple2)}
+.brand span{
+ color:var(--purple2);
+}
 
 .tag{
  margin:14px auto 0;
@@ -123,6 +132,16 @@ h1{
  font-weight:800;
  font-size:18px;
  box-shadow:0 10px 30px rgba(139,53,255,.28);
+ cursor:not-allowed;
+ opacity:.75;
+}
+
+.download-note{
+ text-align:center;
+ color:var(--muted);
+ font-size:14px;
+ line-height:1.8;
+ margin-top:10px;
 }
 
 .activation{
@@ -160,8 +179,14 @@ h1{
 }
 
 @media(max-width:650px){
- .features{grid-template-columns:1fr}
- .card{padding:22px}
+ .features{
+   grid-template-columns:1fr;
+ }
+
+ .card{
+   padding:22px;
+ }
+
  .code{
    font-size:25px;
    letter-spacing:3px;
@@ -171,18 +196,17 @@ h1{
 
 <script type="application/ld+json">
 {
- "@context":"https://schema.org",
- "@type":"SoftwareApplication",
- "name":"HICHRAWI LIVE",
- "applicationCategory":"EntertainmentApplication",
- "operatingSystem":"Android",
- "description":"التطبيق الرسمي لـ HICHRAWI LIVE لمتابعة قنوات HichrawiSport مباشرة.",
- "downloadUrl":"https://hichrawi-tv-app.web.app/hichrawi-live.apk",
- "offers":{
-   "@type":"Offer",
-   "price":"0",
-   "priceCurrency":"TND"
- }
+  "@context":"https://schema.org",
+  "@type":"SoftwareApplication",
+  "name":"HICHRAWI LIVE",
+  "applicationCategory":"EntertainmentApplication",
+  "operatingSystem":"Android",
+  "description":"التطبيق الرسمي لـ HICHRAWI LIVE لمتابعة قنوات HichrawiSport مباشرة.",
+  "offers":{
+    "@type":"Offer",
+    "price":"0",
+    "priceCurrency":"TND"
+  }
 }
 </script>
 
@@ -193,11 +217,15 @@ h1{
 <main class="wrap">
 
 <header class="hero">
- <div class="brand">HICHRAWI <span>LIVE</span></div>
+
+ <div class="brand">
+   HICHRAWI <span>LIVE</span>
+ </div>
 
  <p class="tag">
- التطبيق الرسمي لمتابعة قنوات HichrawiSport مباشرة من هاتفك أو التلفاز.
+   التطبيق الرسمي لمتابعة قنوات HichrawiSport مباشرة من هاتفك أو التلفاز.
  </p>
+
 </header>
 
 <section class="card">
@@ -206,7 +234,7 @@ h1{
 
 <p class="desc">
 واجهة بسيطة وسريعة للوصول إلى قنوات HichrawiSport ومتابعة البث المباشر.
-حمّل النسخة الأولى من الرابط الموجود أسفل الصفحة واستعمل كود التفعيل المخصّص للتطبيق.
+النسخة الرسمية من التطبيق متوفرة لمستخدمي الهاتف والتلفاز، وسيتم تفعيل رابط التحميل الرسمي عند جاهزية النسخة النهائية.
 </p>
 
 <div class="features">
@@ -229,9 +257,20 @@ h1{
 </div>
 
 <div class="download">
-<a class="btn" href="/hichrawi-live.apk">
-⬇️ تحميل النسخة الأولى
+
+<a
+ class="btn"
+ href="#"
+ aria-disabled="true"
+ onclick="return false;"
+>
+⬇️ تحميل التطبيق
 </a>
+
+</div>
+
+<div class="download-note">
+رابط التحميل الرسمي سيتم تفعيله عند إصدار النسخة النهائية.
 </div>
 
 <div class="activation">
