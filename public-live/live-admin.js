@@ -105,12 +105,65 @@ $("createCode").onclick=async()=>{
 async function loadDevices(){
  const snap=await getDocs(collection(db,"licenses"));
  let html="";
+
  snap.forEach(x=>{
   const d=x.data();
-  html+=`<tr><td>${d.deviceKey||"-"}</td><td>${d.subscriptionId||"-"}</td><td>${d.authUid||"-"}</td><td>${d.activatedAt?.toDate?.()?.toLocaleString("fr-TN")||"-"}</td><td>${d.expiresAt?.toDate?.()?.toLocaleString("fr-TN")||"-"}</td></tr>`;
+
+  html+=`<tr>
+   <td>${d.deviceKey||"-"}</td>
+   <td>${d.subscriptionId||"-"}</td>
+   <td>${d.authUid||"-"}</td>
+   <td>${d.activatedAt?.toDate?.()?.toLocaleString("fr-TN")||"-"}</td>
+   <td>${d.expiresAt?.toDate?.()?.toLocaleString("fr-TN")||"-"}</td>
+   <td>
+    <button class="red" data-devdel="${x.id}">🗑 حذف</button>
+   </td>
+  </tr>`;
  });
- $("devicesTable").innerHTML=html||`<tr><td colspan="5">لا توجد أجهزة مفعلة</td></tr>`;
+
+ $("devicesTable").innerHTML=html||`<tr><td colspan="6">لا توجد أجهزة مفعلة</td></tr>`;
  $("countDevices").textContent=snap.size;
+
+ document.querySelectorAll("[data-devdel]").forEach(b=>{
+  b.onclick=async()=>{
+   if(!adminOnly())return;
+
+   if(!confirm("⚠️ حذف هذا الجهاز من التفعيل؟"))return;
+
+   try{
+    const licenseRef=doc(db,"licenses",b.dataset.devdel);
+    const licenseSnap=await getDoc(licenseRef);
+
+    if(!licenseSnap.exists()){
+     alert("❌ الجهاز غير موجود");
+     await loadDevices();
+     return;
+    }
+
+    const d=licenseSnap.data();
+    const subscriptionId=d.subscriptionId;
+    const deviceKey=d.deviceKey;
+
+    // حذف سجل الجهاز فقط
+    await deleteDoc(licenseRef);
+
+    // تحرير الجهاز من الاشتراك حتى يمكن استعمال جهاز آخر
+    if(subscriptionId && deviceKey){
+     await updateDoc(
+      doc(db,"subscriptions",subscriptionId),
+      {deviceIds:arrayRemove(deviceKey)}
+     );
+    }
+
+    alert("✅ تم حذف الجهاز وتحرير مكانه من الاشتراك");
+    await refresh();
+
+   }catch(err){
+    console.error(err);
+    alert("❌ تعذر حذف الجهاز");
+   }
+  };
+ });
 }
 
 async function loadChannels(){
