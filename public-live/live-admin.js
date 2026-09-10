@@ -1,6 +1,6 @@
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
 import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
-import {getFirestore,collection,getDocs,doc,setDoc,deleteDoc,updateDoc,getDoc,query,orderBy,serverTimestamp} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+import {getFirestore,collection,getDocs,doc,setDoc,deleteDoc,updateDoc,getDoc,query,orderBy,serverTimestamp,arrayRemove} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 import {firebaseConfig} from "../admin-config.js";
 
 const app=initializeApp(firebaseConfig);
