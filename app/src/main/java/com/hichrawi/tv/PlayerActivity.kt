@@ -28,7 +28,7 @@ import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -374,7 +374,7 @@ class PlayerActivity : AppCompatActivity() {
             setPadding(4, 10, 4, 16)
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
             isFocusable = true
-            layoutManager = GridLayoutManager(this@PlayerActivity, packageColumns())
+            layoutManager = LinearLayoutManager(this@PlayerActivity, LinearLayoutManager.VERTICAL, false)
             adapter = PackageChannelAdapter(packageChannels)
         }
         packageListView = list
@@ -396,57 +396,97 @@ class PlayerActivity : AppCompatActivity() {
         return panel
     }
 
-    private fun packageColumns(): Int {
-        val widthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
-        return when {
-            widthDp >= 1100 -> 5
-            widthDp >= 700 -> 4
-            else -> 2
-        }
-    }
-
     private inner class PackageChannelAdapter(private val items: List<Api.Channel>) :
         RecyclerView.Adapter<PackageChannelAdapter.Holder>() {
-        inner class Holder(val card: LinearLayout) : RecyclerView.ViewHolder(card)
+
+        inner class Holder(val row: LinearLayout) : RecyclerView.ViewHolder(row)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
-            val card = LinearLayout(this@PlayerActivity).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
-                background = getDrawable(R.drawable.bg_card)
-                setPadding(12, 10, 12, 10)
+            val row = LinearLayout(this@PlayerActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(18, 8, 18, 8)
                 isFocusable = true
                 isClickable = true
-                elevation = 3f
+                background = getDrawable(R.drawable.bg_card)
+                elevation = 2f
             }
-            return Holder(card)
+
+            return Holder(row)
         }
 
         override fun onBindViewHolder(holder: Holder, position: Int) {
             val ch = items[position]
-            val card = holder.card
-            card.removeAllViews()
+            val row = holder.row
+
+            row.removeAllViews()
+
+            val number = TextView(this@PlayerActivity).apply {
+                text = "${position + 1}"
+                textSize = 17f
+                setTextColor(0xFFB8C0CC.toInt())
+                gravity = Gravity.CENTER
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            }
+
+            row.addView(
+                number,
+                LinearLayout.LayoutParams(52, -1)
+            )
+
             val image = ImageView(this@PlayerActivity).apply {
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
                 contentDescription = ch.name
             }
-            card.addView(image, LinearLayout.LayoutParams(-1, 82))
-            card.addView(TextView(this@PlayerActivity).apply {
+
+            row.addView(
+                image,
+                LinearLayout.LayoutParams(64, 58)
+            )
+
+            val name = TextView(this@PlayerActivity).apply {
                 text = ch.name
-                textSize = 15f
+                textSize = 16f
                 setTextColor(0xFFFFFFFF.toInt())
-                gravity = Gravity.CENTER
+                gravity = Gravity.CENTER_VERTICAL
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
-                maxLines = 2
-            }, LinearLayout.LayoutParams(-1, 42))
-            card.setOnClickListener { switchChannel(ch) }
-            card.setOnFocusChangeListener { v, hasFocus ->
-                v.scaleX = if (hasFocus) 1.06f else 1f
-                v.scaleY = if (hasFocus) 1.06f else 1f
-                v.elevation = if (hasFocus) 12f else 3f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
             }
+
+            row.addView(
+                name,
+                LinearLayout.LayoutParams(0, -1, 1f)
+            )
+
+            if (ch.id == currentChannelId) {
+                row.setBackgroundColor(0xFF6A4C93.toInt())
+            }
+
+            row.setOnClickListener {
+                switchChannel(ch)
+            }
+
+            row.setOnFocusChangeListener { v, hasFocus ->
+                if (hasFocus) {
+                    v.scaleX = 1.02f
+                    v.scaleY = 1.02f
+                    v.elevation = 10f
+                } else {
+                    v.scaleX = 1f
+                    v.scaleY = 1f
+                    v.elevation = 2f
+                }
+            }
+
             val fixed = sportLogoFor(ch.name)
-            if (fixed != 0) image.setImageResource(fixed) else ch.logoUrl?.let { loadSmallImage(it, image) }
+            if (fixed != 0) {
+                image.setImageResource(fixed)
+            } else {
+                ch.logoUrl?.let {
+                    loadSmallImage(it, image)
+                }
+            }
         }
 
         override fun getItemCount() = items.size
