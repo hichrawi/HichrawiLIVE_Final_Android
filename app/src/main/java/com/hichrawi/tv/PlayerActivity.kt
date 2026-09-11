@@ -92,15 +92,18 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun sportLogoFor(name: String): Int {
         val n = name.lowercase().replace(" ", "").replace("-", "")
-        return when {
-            n.contains("hichrawisport1") -> R.drawable.hichrawi_sport_1
-            n.contains("hichrawisport2") -> R.drawable.hichrawi_sport_2
-            n.contains("hichrawisport3") -> R.drawable.hichrawi_sport_3
-            n.contains("hichrawisport4") -> R.drawable.hichrawi_sport_4
-            n.contains("hichrawisport5") -> R.drawable.hichrawi_sport_5
-            n.contains("hichrawisport6") -> R.drawable.hichrawi_sport_6
-            n.contains("hichrawisport7") -> R.drawable.hichrawi_sport_7
-            n.contains("hichrawisport8") -> R.drawable.hichrawi_sport_8
+        val match = Regex("^hichrawisport(\\d+)$").find(n)
+        val number = match?.groupValues?.getOrNull(1)?.toIntOrNull() ?: return 0
+
+        return when (number) {
+            1 -> R.drawable.hichrawi_sport_1
+            2 -> R.drawable.hichrawi_sport_2
+            3 -> R.drawable.hichrawi_sport_3
+            4 -> R.drawable.hichrawi_sport_4
+            5 -> R.drawable.hichrawi_sport_5
+            6 -> R.drawable.hichrawi_sport_6
+            7 -> R.drawable.hichrawi_sport_7
+            8 -> R.drawable.hichrawi_sport_8
             else -> 0
         }
     }
