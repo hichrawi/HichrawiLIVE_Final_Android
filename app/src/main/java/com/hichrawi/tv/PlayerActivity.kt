@@ -293,33 +293,40 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun loadCurrentPackageChannels() {
-        if (packageChannels.isNotEmpty()) {
-            showPackageOverlay()
-            return
-        }
-        val deviceId = prefs.getLong("firebase_device_id", prefs.getLong("server_device_id", 0L))
+
+        val deviceId = prefs.getLong(
+            "firebase_device_id",
+            prefs.getLong("server_device_id", 0L)
+        )
+
         packageJob?.cancel()
         packageJob = lifecycleScope.launch(Dispatchers.IO) {
             try {
+                // Load ALL enabled channels from Firebase/admin.
+                // No package channelIds filtering and no fixed channel limit.
                 val channels = Api.channels(this@PlayerActivity, deviceId)
-                val packages = Api.packages(this@PlayerActivity, deviceId, channels)
-                val pkg = packages.firstOrNull { currentChannelId in it.channelIds }
-                    ?: packages.firstOrNull { p ->
-                        p.name.contains("sport", true) && currentChannelName.contains("sport", true)
-                    }
-                val selected = pkg?.channelIds?.toSet().orEmpty()
-                val filtered = if (selected.isNotEmpty()) channels.filter { it.id in selected }
-                else channels.filter { it.name.contains("sport", true) || it.name.contains("سبورت", true) || it.name.contains("رياض", true) }
-                packageChannels = filtered
-                packageName = pkg?.name ?: if (filtered.isNotEmpty()) "الباقة الرياضية" else "قنوات الباقة"
+
+                packageChannels = channels
+                packageName = "القنوات"
+
                 withContext(Dispatchers.Main) {
                     if (packageChannels.isEmpty()) {
-                        Toast.makeText(this@PlayerActivity, "لا توجد قنوات أخرى في الباقة", Toast.LENGTH_SHORT).show()
-                    } else showPackageOverlay()
+                        Toast.makeText(
+                            this@PlayerActivity,
+                            "لا توجد قنوات مفعلة",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        showPackageOverlay()
+                    }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@PlayerActivity, e.message ?: "تعذر تحميل القنوات", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@PlayerActivity,
+                        e.message ?: "تعذر تحميل القنوات",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
