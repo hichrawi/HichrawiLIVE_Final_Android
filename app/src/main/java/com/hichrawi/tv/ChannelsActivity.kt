@@ -211,7 +211,7 @@ class ChannelsActivity : AppCompatActivity() {
             setPadding(14, 12, 14, 12)
         }
         left.addView(tv("HICHRAWI SPORT", 20f, text, true, Gravity.START), LinearLayout.LayoutParams(-1, 42))
-        left.addView(tv("1 — 8", 13f, muted, false, Gravity.START), LinearLayout.LayoutParams(-1, 28))
+        left.addView(tv("القنوات الرياضية", 13f, muted, false, Gravity.START), LinearLayout.LayoutParams(-1, 28))
 
         val list = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@ChannelsActivity)
@@ -247,9 +247,17 @@ class ChannelsActivity : AppCompatActivity() {
     }
 
     private fun sportsOnly(): List<Api.Channel> = allChannels
-        .filter { it.name.matches(Regex("(?i)HichrawiSport[1-8]")) }
-        .sortedBy { it.name.substringAfter("Sport", "0").toIntOrNull() ?: 99 }
-        .take(8)
+        .filter { it.name.contains("HichrawiSport", ignoreCase = true) }
+        .sortedWith(
+            compareBy<Api.Channel> {
+                Regex("(?i)HichrawiSport(\\d+)")
+                    .find(it.name.replace(" ", ""))
+                    ?.groupValues
+                    ?.getOrNull(1)
+                    ?.toIntOrNull()
+                    ?: 9999
+            }.thenBy { it.sortOrder }.thenBy { it.id }
+        )
 
     private inner class LiveAdapter(private val items: List<Api.Channel>) : RecyclerView.Adapter<LiveAdapter.Holder>() {
         inner class Holder(val row: LinearLayout) : RecyclerView.ViewHolder(row)
