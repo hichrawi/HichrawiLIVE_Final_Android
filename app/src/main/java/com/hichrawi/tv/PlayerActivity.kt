@@ -1,35 +1,22 @@
 package com.hichrawi.tv
-import android.widget.Toast
-import androidx.lifecycle.lifecycleScope
+
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
-import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.media3.common.MediaItem
-import androidx.media3.common.MimeTypes
-import androidx.media3.common.Player
-import androidx.media3.common.PlaybackException
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.DefaultLoadControl
-import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import androidx.media3.exoplayer.DefaultRenderersFactory
-import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.extractor.DefaultExtractorsFactory
-import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.ui.PlayerView
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
@@ -37,65 +24,77 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.videolan.libvlc.IVLCVout
+import org.videolan.libvlc.LibVLC
+import org.videolan.libvlc.Media
+import org.videolan.libvlc.MediaPlayer
+import org.videolan.libvlc.VLCEvent
 
-@OptIn(UnstableApi::class)
-class PlayerActivity : AppCompatActivity() {
-    private lateinit var playerView: PlayerView
+class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
+    private lateinit var videoSurface: SurfaceView
     private lateinit var logo: ImageView
     private lateinit var message: TextView
     private lateinit var root: FrameLayout
+
     private val prefs by lazy { getSharedPreferences("hichrawi", MODE_PRIVATE) }
-    private val isTvDevice by lazy {
-        packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-    }
-    private var player: ExoPlayer? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val httpClient by lazy { OkHttpClient() }
+
+    private var libVlc: LibVLC? = null
+    private var vlcPlayer: MediaPlayer? = null
+    private var currentMedia: Media? = null
     private var guardJob: Job? = null
     private var packageJob: Job? = null
+
     private var currentChannelId = 0L
     private var currentChannelName = ""
+    private var currentStreamUrl: String? = null
     private var packageOverlay: View? = null
     private var packageListView: RecyclerView? = null
     private var packageChannels: List<Api.Channel> = emptyList()
-    private var packageName = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN or
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+        window.decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
         setContentView(R.layout.activity_player)
 
         root = findViewById(R.id.playerRoot)
-        playerView = findViewById(R.id.playerView)
+        videoSurface = findViewById(R.id.videoSurface)
         logo = findViewById(R.id.channelLogo)
         message = findViewById(R.id.playerMessage)
+
         findViewById<View>(R.id.playerBack)?.setOnClickListener { finish() }
         findViewById<View>(R.id.playerExit)?.setOnClickListener { finish() }
-        configureDeviceControls()
 
         currentChannelId = intent.getLongExtra("channel_id", 0L)
         currentChannelName = intent.getStringExtra("channel_name").orEmpty()
         message.text = currentChannelName
         setChannelLogo(currentChannelName, intent.getStringExtra("logo_url"))
+        configureDeviceControls()
         startPlayback(currentChannelId)
     }
 
     private fun configureDeviceControls() {
         val back = findViewById<View>(R.id.playerBack)
         val exit = findViewById<View>(R.id.playerExit)
-
-        if (isTvDevice) {
-            back?.visibility = View.GONE
-            exit?.visibility = View.GONE
-        } else {
-            back?.visibility = View.VISIBLE
-            exit?.visibility = View.VISIBLE
-        }
+        val isTv = packageManager.hasSystemFeature("android.software.leanback")
+        back?.visibility = if (isTv) View.GONE else View.VISIBLE
+        exit?.visibility = if (isTv) View.GONE else View.VISIBLE
     }
 
     private fun sportLogoFor(name: String): Int {
-        val n = name.lowercase().replace(" ", "").replace("-", "")
-        val match = Regex("^hichrawisport(\\d+)$").find(n)
-        val number = match?.groupValues?.getOrNull(1)?.toIntOrNull() ?: return 0
+        val normalized = name.lowercase().replace(" ", "").replace("-", "")
+        val number = Regex("^hichrawisport(\\d+)$")
+            .find(normalized)
+            ?.groupValues
+            ?.getOrNull(1)
+            ?.toIntOrNull()
+            ?: return 0
 
         return when (number) {
             1 -> R.drawable.hichrawi_sport_1
@@ -111,14 +110,123 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun setChannelLogo(name: String, url: String?) {
-        val sportLogo = sportLogoFor(name)
-        if (sportLogo != 0) {
-            logo.setImageResource(sportLogo)
+        val fixed = sportLogoFor(name)
+        if (fixed != 0) {
+            logo.setImageResource(fixed)
             logo.visibility = View.VISIBLE
-        } else {
-            logo.setImageResource(R.drawable.hichrawi_live_logo)
-            logo.visibility = View.VISIBLE
-            if (!url.isNullOrBlank()) loadWatermark(url)
+            return
+        }
+
+        logo.setImageResource(R.drawable.hichrawi_live_logo)
+        logo.visibility = View.VISIBLE
+        if (!url.isNullOrBlank()) loadWatermark(url)
+    }
+
+    private fun startPlayback(channelId: Long) {
+        val deviceId = prefs.getLong(
+            "firebase_device_id",
+            prefs.getLong("server_device_id", 0L)
+        )
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val state = Api.license(this@PlayerActivity, deviceId)
+                if (state.optJSONObject("subscription")?.optBoolean("active") != true) {
+                    throw IllegalStateException("الاشتراك غير فعال")
+                }
+
+                val directUrl =
+                    if (channelId == currentChannelId) intent.getStringExtra("direct_url") else null
+                val url = if (!directUrl.isNullOrBlank() && channelId == currentChannelId) {
+                    directUrl
+                } else {
+                    Api.playback(this@PlayerActivity, deviceId, channelId)
+                }
+
+                withContext(Dispatchers.Main) {
+                    prepareVlc(url)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    showPlaybackError(e.message ?: "تعذر تشغيل المحتوى")
+                }
+            }
+        }
+    }
+
+    private fun prepareVlc(url: String) {
+        currentStreamUrl = url
+        releaseVlc()
+
+        message.visibility = View.VISIBLE
+        message.text = currentChannelName
+        findViewById<View>(R.id.playerBack)?.visibility = View.GONE
+        findViewById<View>(R.id.playerExit)?.visibility = View.GONE
+
+        try {
+            val options = arrayListOf(
+                "--audio-time-stretch",
+                "--avcodec-skiploopfilter",
+                "2",
+                "--avcodec-skip-frame",
+                "2",
+                "--avcodec-skip-idct",
+                "2",
+                "--network-caching=3000",
+                "--androidwindow-chroma",
+                "RV32"
+            )
+
+            libVlc = LibVLC(this, options).also {
+                it.setOnHardwareAccelerationError {
+                    runOnUiThread {
+                        showPlaybackError("تعذر تفعيل تسريع الفيديو على الجهاز")
+                    }
+                }
+                it.setUserAgent("HICHRAWI LIVE", "HichrawiLiveVlc")
+            }
+
+            val vlc = MediaPlayer(libVlc).also { player ->
+                player.setEventListener(object : MediaPlayer.EventListener {
+                    override fun onEvent(event: VLCEvent) {
+                        val mediaEvent = event as? MediaPlayer.Event ?: return
+                        when (mediaEvent.type) {
+                            MediaPlayer.Event.Playing,
+                            MediaPlayer.Event.Vout -> {
+                                runOnUiThread { hidePlaybackOverlays() }
+                            }
+                            MediaPlayer.Event.EndReached -> {
+                                runOnUiThread {
+                                    showPlaybackError("انتهى البث")
+                                }
+                            }
+                            MediaPlayer.Event.EncounteredError -> {
+                                runOnUiThread {
+                                    showPlaybackError("تعذر تشغيل البث")
+                                }
+                            }
+                        }
+                    }
+                })
+
+                val vout = player.vlcVout
+                vout.setVideoView(videoSurface)
+                vout.addCallback(this)
+                vout.attachViews()
+            }
+            vlcPlayer = vlc
+
+            val media = Media(libVlc, Uri.parse(url)).also {
+                it.addOption(":network-caching=3000")
+                it.addOption(":http-reconnect=true")
+            }
+            currentMedia = media
+            vlc.setMedia(media)
+            vlc.play()
+            startLicenseGuard()
+        } catch (e: Exception) {
+            releaseVlc()
+            showPlaybackError(e.message ?: "خطأ في إنشاء مشغل البث")
         }
     }
 
@@ -131,171 +239,45 @@ class PlayerActivity : AppCompatActivity() {
     private fun showPlaybackError(text: String) {
         message.text = text
         message.visibility = View.VISIBLE
-        findViewById<View>(R.id.playerBack)?.visibility = View.VISIBLE
-        findViewById<View>(R.id.playerExit)?.visibility =
-            if (isTvDevice) View.GONE else View.VISIBLE
-    }
-
-    private fun startPlayback(channelId: Long) {
-        val deviceId = prefs.getLong("firebase_device_id", prefs.getLong("server_device_id", 0L))
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val state = Api.license(this@PlayerActivity, deviceId)
-                if (state.optJSONObject("subscription")?.optBoolean("active") != true)
-                    throw Exception("الاشتراك غير فعال")
-                val directUrl = if (channelId == currentChannelId) intent.getStringExtra("direct_url") else null
-                val url = if (!directUrl.isNullOrBlank() && channelId == currentChannelId) directUrl
-                else Api.playback(this@PlayerActivity, deviceId, channelId)
-                withContext(Dispatchers.Main) { prepare(url) }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    showPlaybackError(e.message ?: "تعذر تشغيل المحتوى")
-                }
-            }
-        }
-    }
-
-    private fun prepare(url: String) {
-        guardJob?.cancel()
-        player?.release()
-        player = null
-        val httpFactory = DefaultHttpDataSource.Factory()
-            .setAllowCrossProtocolRedirects(true)
-            .setUserAgent("VLC/3.0.21 LibVLC/3.0.21")
-            .setDefaultRequestProperties(mapOf("Accept" to "*/*"))
-        val extractorsFactory = DefaultExtractorsFactory()
-            .setTsExtractorFlags(
-                DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS or
-                    DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES
-            )
-        val mediaSourceFactory = DefaultMediaSourceFactory(httpFactory, extractorsFactory)
-        val clean = url.substringBefore('?').lowercase()
-        val builder = MediaItem.Builder().setUri(Uri.parse(url))
-        when {
-            clean.endsWith(".m3u8") || clean.contains("/m3u8") ->
-                builder.setMimeType(MimeTypes.APPLICATION_M3U8)
-            clean.endsWith(".mp4") ->
-                builder.setMimeType(MimeTypes.VIDEO_MP4)
-            clean.endsWith(".mp3") ->
-                builder.setMimeType(MimeTypes.AUDIO_MPEG)
-            clean.endsWith(".aac") ->
-                builder.setMimeType(MimeTypes.AUDIO_AAC)
-            else ->
-                builder.setMimeType(MimeTypes.VIDEO_MP2T)
-        }
-
-        message.visibility = View.VISIBLE
-        message.text = currentChannelName
-        findViewById<View>(R.id.playerBack)?.visibility =
-            if (isTvDevice) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.playerExit)?.visibility =
-            if (isTvDevice) View.GONE else View.VISIBLE
-
-        val renderersFactory = DefaultRenderersFactory(this)
-            .setMediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
-                MediaCodecSelector.DEFAULT
-                    .getDecoderInfos(
-                        mimeType,
-                        requiresSecureDecoder,
-                        requiresTunnelingDecoder
-                    )
-                    .sortedBy { it.softwareOnly }
-            }
-            .setEnableDecoderFallback(true)
-
-        val trackSelector = DefaultTrackSelector(this).apply {
-            setParameters(
-                buildUponParameters()
-                    .setMaxVideoSize(1280, 720)
-                    .setMaxVideoBitrate(5_000_000)
-            )
-        }
-
-        val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(
-                12_000,
-                45_000,
-                1_500,
-                3_000
-            )
-            .setPrioritizeTimeOverSizeThresholds(true)
-            .build()
-
-        player = ExoPlayer.Builder(this, renderersFactory)
-            .setTrackSelector(trackSelector)
-            .setLoadControl(loadControl)
-            .setMediaSourceFactory(mediaSourceFactory)
-            .apply {
-                if (isTvDevice) {
-                    trackSelector.setParameters(
-                        trackSelector.buildUponParameters()
-                            .setTunnelingEnabled(true)
-                    )
-                }
-            }
-            .build()
-            .also { p ->
-                playerView.player = p
-                p.addListener(object : Player.Listener {
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-                        if (playbackState == Player.STATE_READY) hidePlaybackOverlays()
-                    }
-                    override fun onIsPlayingChanged(isPlaying: Boolean) {
-                        if (isPlaying) hidePlaybackOverlays()
-                    }
-
-                    override fun onPlayerError(error: PlaybackException) {
-                        val cause = error.cause
-                        val details = buildString {
-                            append("ExoPlayer: ")
-                            append(error.errorCodeName)
-                            append("\n")
-                            append(error.message ?: "بدون رسالة")
-                            if (cause != null) {
-                                append("\n")
-                                append(cause.javaClass.simpleName)
-                                append(": ")
-                                append(cause.message ?: "")
-                            }
-                        }
-                        runOnUiThread {
-                            showPlaybackError(details)
-                        }
-                    }
-                })
-                p.setMediaItem(builder.build())
-                p.prepare()
-                p.playWhenReady = true
-            }
-        startLicenseGuard()
+        val isTv = packageManager.hasSystemFeature("android.software.leanback")
+        findViewById<View>(R.id.playerBack)?.visibility = if (isTv) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.playerExit)?.visibility = if (isTv) View.GONE else View.VISIBLE
     }
 
     private fun startLicenseGuard() {
-        val deviceId = prefs.getLong("firebase_device_id", prefs.getLong("server_device_id", 0L))
+        val deviceId = prefs.getLong(
+            "firebase_device_id",
+            prefs.getLong("server_device_id", 0L)
+        )
         guardJob?.cancel()
         guardJob = lifecycleScope.launch {
             while (true) {
                 delay(60_000)
                 try {
-                    val state = withContext(Dispatchers.IO) { Api.license(this@PlayerActivity, deviceId) }
+                    val state = withContext(Dispatchers.IO) {
+                        Api.license(this@PlayerActivity, deviceId)
+                    }
                     if (state.optJSONObject("subscription")?.optBoolean("active") != true) {
-                        player?.stop()
+                        releaseVlc()
                         showPlaybackError("الاشتراك لم يعد فعالاً")
                         break
                     }
-                } catch (_: Exception) { }
+                } catch (_: Exception) {
+                    // Keep the current stream alive if a periodic license check is temporarily unavailable.
+                }
             }
         }
     }
 
-    /** Press OK/Enter on the TV remote to open the channels of the current package. */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
             when (event.keyCode) {
-                KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                    // When the package list is open, let the focused card/button receive OK.
-                    if (packageOverlay?.visibility == View.VISIBLE) return super.dispatchKeyEvent(event)
-                    if (!isRepeatedKey(event)) {
+                KeyEvent.KEYCODE_DPAD_CENTER,
+                KeyEvent.KEYCODE_ENTER -> {
+                    if (packageOverlay?.visibility == View.VISIBLE) {
+                        return super.dispatchKeyEvent(event)
+                    }
+                    if (event.repeatCount == 0) {
                         togglePackageOverlay()
                         return true
                     }
@@ -315,8 +297,6 @@ class PlayerActivity : AppCompatActivity() {
         return super.dispatchKeyEvent(event)
     }
 
-    private fun isRepeatedKey(event: KeyEvent): Boolean = event.repeatCount > 0
-
     private fun togglePackageOverlay() {
         if (packageOverlay?.visibility == View.VISIBLE) {
             hidePackageOverlay()
@@ -326,7 +306,6 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun loadCurrentPackageChannels() {
-
         val deviceId = prefs.getLong(
             "firebase_device_id",
             prefs.getLong("server_device_id", 0L)
@@ -335,13 +314,8 @@ class PlayerActivity : AppCompatActivity() {
         packageJob?.cancel()
         packageJob = lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // Load ALL enabled channels from Firebase/admin.
-                // No package channelIds filtering and no fixed channel limit.
                 val channels = Api.channels(this@PlayerActivity, deviceId)
-
                 packageChannels = channels
-                packageName = "القنوات"
-
                 withContext(Dispatchers.Main) {
                     if (packageChannels.isEmpty()) {
                         Toast.makeText(
@@ -366,7 +340,9 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun showPackageOverlay() {
-        if (packageOverlay == null) packageOverlay = buildPackageOverlay()
+        if (packageOverlay == null) {
+            packageOverlay = buildPackageOverlay()
+        }
         packageOverlay?.visibility = View.VISIBLE
         packageOverlay?.bringToFront()
 
@@ -379,77 +355,74 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun hidePackageOverlay() {
         packageOverlay?.visibility = View.GONE
-        playerView.requestFocus()
+        videoSurface.requestFocus()
     }
 
     private fun buildPackageOverlay(): View {
         val panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            background = getDrawable(R.drawable.bg_card)
+            setBackgroundColor(0xE6111118.toInt())
             setPadding(18, 18, 18, 18)
             isFocusable = true
             elevation = 18f
         }
 
-        val top = LinearLayout(this).apply {
+        val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        top.addView(TextView(this).apply {
+        header.addView(TextView(this).apply {
             text = "القنوات الرياضية (${packageChannels.size})"
             textSize = 21f
             setTextColor(0xFFFFFFFF.toInt())
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             gravity = Gravity.CENTER_VERTICAL
-        }, LinearLayout.LayoutParams(0, 52, 1f))
+        }, LinearLayout.LayoutParams(0, 56, 1f))
 
-        top.addView(Button(this).apply {
-            text = "EXIT"
-            isAllCaps = false
+        header.addView(TextView(this).apply {
+            text = "OK"
             textSize = 14f
             setTextColor(0xFFFFFFFF.toInt())
-            background = getDrawable(R.drawable.bg_button)
-            setOnClickListener { finish() }
-        }, LinearLayout.LayoutParams(110, 50))
+            gravity = Gravity.CENTER
+            setBackgroundColor(0xFF6A4C93.toInt())
+            setPadding(20, 0, 20, 0)
+            isFocusable = false
+        }, LinearLayout.LayoutParams(72, 44))
 
-        panel.addView(top)
+        panel.addView(header)
 
         val list = RecyclerView(this).apply {
             id = View.generateViewId()
-            setHasFixedSize(false)
             clipToPadding = false
             setPadding(4, 8, 4, 12)
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
             isFocusable = true
-            layoutManager = LinearLayoutManager(this@PlayerActivity, LinearLayoutManager.VERTICAL, false)
+            layoutManager = LinearLayoutManager(this@PlayerActivity)
             adapter = PackageChannelAdapter(packageChannels)
         }
-
         packageListView = list
         panel.addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
 
-        val hint = TextView(this).apply {
+        panel.addView(TextView(this).apply {
             text = "OK: اختيار   •   ▲▼: تنقل   •   BACK: إخفاء"
             textSize = 13f
             setTextColor(0xFFB8C0CC.toInt())
             gravity = Gravity.CENTER
-        }
-
-        panel.addView(hint, LinearLayout.LayoutParams(-1, 34))
+        }, LinearLayout.LayoutParams(-1, 36))
 
         val lp = FrameLayout.LayoutParams(560, -1).apply {
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            setMargins(28, 28, 0, 28)
+            setMargins(18, 18, 0, 18)
         }
-
         root.addView(panel, lp)
         return panel
     }
 
-    private inner class PackageChannelAdapter(private val items: List<Api.Channel>) :
-        RecyclerView.Adapter<PackageChannelAdapter.Holder>() {
+    private inner class PackageChannelAdapter(
+        private val items: List<Api.Channel>
+    ) : RecyclerView.Adapter<PackageChannelAdapter.Holder>() {
 
         inner class Holder(val row: LinearLayout) : RecyclerView.ViewHolder(row)
 
@@ -460,152 +433,197 @@ class PlayerActivity : AppCompatActivity() {
                 setPadding(12, 5, 12, 5)
                 isFocusable = true
                 isClickable = true
-                background = getDrawable(R.drawable.bg_card)
+                setBackgroundColor(0xB322222B.toInt())
                 elevation = 2f
             }
-
             return Holder(row)
         }
 
         override fun onBindViewHolder(holder: Holder, position: Int) {
-            val ch = items[position]
+            val channel = items[position]
             val row = holder.row
-
             row.removeAllViews()
 
-            val number = TextView(this@PlayerActivity).apply {
+            row.addView(TextView(this@PlayerActivity).apply {
                 text = "${position + 1}"
                 textSize = 17f
                 setTextColor(0xFFB8C0CC.toInt())
                 gravity = Gravity.CENTER
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
-            }
-
-            row.addView(
-                number,
-                LinearLayout.LayoutParams(48, -1)
-            )
+            }, LinearLayout.LayoutParams(48, -1))
 
             val image = ImageView(this@PlayerActivity).apply {
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
-                contentDescription = ch.name
+                contentDescription = channel.name
             }
+            row.addView(image, LinearLayout.LayoutParams(58, 54))
 
-            row.addView(
-                image,
-                LinearLayout.LayoutParams(58, 54)
-            )
-
-            val name = TextView(this@PlayerActivity).apply {
-                text = ch.name
+            row.addView(TextView(this@PlayerActivity).apply {
+                text = channel.name
                 textSize = 16f
                 setTextColor(0xFFFFFFFF.toInt())
                 gravity = Gravity.CENTER_VERTICAL
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
-            }
+            }, LinearLayout.LayoutParams(0, -1, 1f))
 
-            row.addView(
-                name,
-                LinearLayout.LayoutParams(0, -1, 1f)
-            )
-
-            if (ch.id == currentChannelId) {
+            if (channel.id == currentChannelId) {
                 row.setBackgroundColor(0xFF6A4C93.toInt())
             }
 
-            row.setOnClickListener {
-                switchChannel(ch)
-            }
-
-            row.setOnKeyListener { _, keyCode, event ->
-                if (event.action == KeyEvent.ACTION_DOWN &&
-                    (keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
-                     keyCode == KeyEvent.KEYCODE_ENTER)) {
-                    switchChannel(ch)
+            row.setOnClickListener { switchChannel(channel) }
+            row.setOnKeyListener { _, keyCode, keyEvent ->
+                if (keyEvent.action == KeyEvent.ACTION_DOWN &&
+                    (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)
+                ) {
+                    switchChannel(channel)
                     true
                 } else {
                     false
                 }
             }
-
-            row.setOnFocusChangeListener { v, hasFocus ->
+            row.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
-                    v.scaleX = 1.015f
-                    v.scaleY = 1.015f
-                    v.elevation = 12f
-                    v.setBackgroundColor(0xFF8B2FD0.toInt())
+                    view.scaleX = 1.015f
+                    view.scaleY = 1.015f
+                    view.elevation = 12f
+                    view.setBackgroundColor(0xFF8B2FD0.toInt())
                 } else {
-                    v.scaleX = 1f
-                    v.scaleY = 1f
-                    v.elevation = 2f
-                    if (ch.id == currentChannelId) {
-                        v.setBackgroundColor(0xFF6A4C93.toInt())
+                    view.scaleX = 1f
+                    view.scaleY = 1f
+                    view.elevation = 2f
+                    if (channel.id == currentChannelId) {
+                        view.setBackgroundColor(0xFF6A4C93.toInt())
                     } else {
-                        v.background = getDrawable(R.drawable.bg_card)
+                        view.setBackgroundColor(0xB322222B.toInt())
                     }
                 }
             }
 
-            val fixed = sportLogoFor(ch.name)
+            val fixed = sportLogoFor(channel.name)
             if (fixed != 0) {
                 image.setImageResource(fixed)
-            } else {
-                ch.logoUrl?.let {
-                    loadSmallImage(it, image)
-                }
+            } else if (!channel.logoUrl.isNullOrBlank()) {
+                loadSmallImage(channel.logoUrl, image)
             }
         }
 
-        override fun getItemCount() = items.size
+        override fun getItemCount(): Int = items.size
     }
 
-    private fun switchChannel(ch: Api.Channel) {
-        currentChannelId = ch.id
-        currentChannelName = ch.name
-        setChannelLogo(ch.name, ch.logoUrl)
-        message.text = ch.name
+    private fun switchChannel(channel: Api.Channel) {
+        currentChannelId = channel.id
+        currentChannelName = channel.name
+        setChannelLogo(channel.name, channel.logoUrl)
+        message.text = channel.name
         hidePackageOverlay()
-        startPlayback(ch.id)
+        startPlayback(channel.id)
     }
 
     private fun loadSmallImage(url: String, image: ImageView) {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val req = okhttp3.Request.Builder().url(url).build()
-                okhttp3.OkHttpClient().newCall(req).execute().use { r ->
-                    if (!r.isSuccessful) return@use
-                    val bytes = r.body?.bytes() ?: return@use
-                    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
-                    withContext(Dispatchers.Main) { image.setImageBitmap(bmp) }
+                val request = Request.Builder().url(url).build()
+                httpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use
+                    val bytes = response.body?.bytes() ?: return@use
+                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
+                    withContext(Dispatchers.Main) { image.setImageBitmap(bitmap) }
                 }
-            } catch (_: Exception) { }
+            } catch (_: Exception) {
+            }
         }
     }
 
     private fun loadWatermark(url: String) {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val req = okhttp3.Request.Builder().url(url).build()
-                okhttp3.OkHttpClient().newCall(req).execute().use { r ->
-                    if (!r.isSuccessful) return@use
-                    val bytes = r.body?.bytes() ?: return@use
-                    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
+                val request = Request.Builder().url(url).build()
+                httpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use
+                    val bytes = response.body?.bytes() ?: return@use
+                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@use
                     withContext(Dispatchers.Main) {
-                        logo.setImageBitmap(bmp)
+                        logo.setImageBitmap(bitmap)
                         logo.visibility = View.VISIBLE
                     }
                 }
-            } catch (_: Exception) { }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun releaseVlc() {
+        mainHandler.removeCallbacksAndMessages(null)
+        guardJob?.cancel()
+        guardJob = null
+
+        try {
+            vlcPlayer?.stop()
+        } catch (_: Exception) {
+        }
+
+        try {
+            vlcPlayer?.vlcVout?.removeCallback(this)
+            vlcPlayer?.vlcVout?.detachViews()
+        } catch (_: Exception) {
+        }
+
+        try {
+            currentMedia?.release()
+        } catch (_: Exception) {
+        }
+        currentMedia = null
+
+        try {
+            vlcPlayer?.release()
+        } catch (_: Exception) {
+        }
+        vlcPlayer = null
+
+        try {
+            libVlc?.release()
+        } catch (_: Exception) {
+        }
+        libVlc = null
+    }
+
+    override fun onNewLayout(
+        vout: IVLCVout,
+        width: Int,
+        height: Int,
+        visibleWidth: Int,
+        visibleHeight: Int,
+        sarNum: Int,
+        sarDen: Int
+    ) {
+        if (visibleWidth <= 0 || visibleHeight <= 0) return
+        videoSurface.post {
+            videoSurface.holder.setFixedSize(visibleWidth, visibleHeight)
+            videoSurface.layoutParams = videoSurface.layoutParams.apply {
+                this.width = ViewGroup.LayoutParams.MATCH_PARENT
+                this.height = ViewGroup.LayoutParams.MATCH_PARENT
+            }
+            videoSurface.requestLayout()
+        }
+    }
+
+    override fun onSurfacesCreated(vout: IVLCVout) = Unit
+
+    override fun onSurfacesDestroyed(vout: IVLCVout) = Unit
+
+    override fun onStart() {
+        super.onStart()
+        if (currentStreamUrl != null && vlcPlayer == null) {
+            prepareVlc(currentStreamUrl!!)
         }
     }
 
     override fun onStop() {
         packageJob?.cancel()
-        guardJob?.cancel()
-        player?.release()
-        player = null
+        packageJob = null
+        releaseVlc()
         super.onStop()
     }
 }

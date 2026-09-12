@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/playerRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
 
-    <androidx.media3.ui.PlayerView
-        android:id="@+id/playerView"
+    <SurfaceView
+        android:id="@+id/videoSurface"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:keepScreenOn="true"
-        app:resize_mode="fit"
-        app:surface_type="surface_view" />
+        android:focusable="true"
+        android:focusableInTouchMode="true" />
 
     <ImageView
         android:id="@+id/channelLogo"
@@ -46,13 +45,14 @@
         android:focusable="true"
         android:contentDescription="رجوع" />
 
-    <Button
+    <TextView
         android:id="@+id/playerExit"
         android:layout_width="82dp"
         android:layout_height="52dp"
         android:layout_gravity="top|start"
         android:layout_marginTop="18dp"
         android:layout_marginStart="78dp"
+        android:gravity="center"
         android:text="EXIT"
         android:textColor="#FFFFFF"
         android:textSize="15sp"
