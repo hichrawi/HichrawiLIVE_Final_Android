@@ -30,7 +30,6 @@ import org.videolan.libvlc.interfaces.IVLCVout
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
-import org.videolan.libvlc.VLCEvent
 
 class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
     private lateinit var videoSurface: SurfaceView
@@ -178,18 +177,13 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
             )
 
             libVlc = LibVLC(this, options).also {
-                it.setOnHardwareAccelerationError {
-                    runOnUiThread {
-                        showPlaybackError("تعذر تفعيل تسريع الفيديو على الجهاز")
-                    }
-                }
                 it.setUserAgent("HICHRAWI LIVE", "HichrawiLiveVlc")
             }
 
             val vlc = MediaPlayer(libVlc).also { player ->
                 player.setEventListener(object : MediaPlayer.EventListener {
-                    override fun onEvent(event: VLCEvent) {
-                        val mediaEvent = event as? MediaPlayer.Event ?: return
+                    override fun onEvent(event: MediaPlayer.Event) {
+                        val mediaEvent = event
                         when (mediaEvent.type) {
                             MediaPlayer.Event.Playing,
                             MediaPlayer.Event.Vout -> {
