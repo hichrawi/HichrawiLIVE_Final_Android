@@ -192,6 +192,7 @@ class PlayerActivity : AppCompatActivity() {
             if (isTvDevice) View.GONE else View.VISIBLE
 
         val renderersFactory = DefaultRenderersFactory(this)
+            .forceEnableMediaCodecAsynchronousQueueing()
             .setMediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
                 MediaCodecSelector.DEFAULT
                     .getDecoderInfos(
@@ -213,8 +214,8 @@ class PlayerActivity : AppCompatActivity() {
 
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                15_000,
-                60_000,
+                8_000,
+                30_000,
                 1_500,
                 3_000
             )
