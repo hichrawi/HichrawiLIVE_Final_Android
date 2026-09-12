@@ -510,10 +510,10 @@ class PlayerActivity : AppCompatActivity() {
                     v.scaleX = 1f
                     v.scaleY = 1f
                     v.elevation = 2f
-                    v.background = if (ch.id == currentChannelId) {
-                        solid(0xFF6A4C93.toInt(), 10f)
+                    if (ch.id == currentChannelId) {
+                        v.setBackgroundColor(0xFF6A4C93.toInt())
                     } else {
-                        getDrawable(R.drawable.bg_card)
+                        v.background = getDrawable(R.drawable.bg_card)
                     }
                 }
             }
