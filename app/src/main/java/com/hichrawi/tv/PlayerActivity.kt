@@ -339,7 +339,12 @@ class PlayerActivity : AppCompatActivity() {
         if (packageOverlay == null) packageOverlay = buildPackageOverlay()
         packageOverlay?.visibility = View.VISIBLE
         packageOverlay?.bringToFront()
-        packageListView?.requestFocus()
+
+        val index = packageChannels.indexOfFirst { it.id == currentChannelId }.coerceAtLeast(0)
+        packageListView?.scrollToPosition(index)
+        packageListView?.post {
+            packageListView?.findViewHolderForAdapterPosition(index)?.itemView?.requestFocus()
+        }
     }
 
     private fun hidePackageOverlay() {
@@ -351,22 +356,25 @@ class PlayerActivity : AppCompatActivity() {
         val panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setBackgroundColor(0xF20A0D13.toInt())
-            setPadding(28, 20, 28, 22)
+            background = getDrawable(R.drawable.bg_card)
+            setPadding(18, 18, 18, 18)
             isFocusable = true
+            elevation = 18f
         }
 
         val top = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
+
         top.addView(TextView(this).apply {
-            text = packageName
+            text = "القنوات الرياضية (${packageChannels.size})"
             textSize = 21f
             setTextColor(0xFFFFFFFF.toInt())
             setTypeface(typeface, android.graphics.Typeface.BOLD)
             gravity = Gravity.CENTER_VERTICAL
         }, LinearLayout.LayoutParams(0, 52, 1f))
+
         top.addView(Button(this).apply {
             text = "EXIT"
             isAllCaps = false
@@ -375,33 +383,37 @@ class PlayerActivity : AppCompatActivity() {
             background = getDrawable(R.drawable.bg_button)
             setOnClickListener { finish() }
         }, LinearLayout.LayoutParams(110, 50))
+
         panel.addView(top)
 
         val list = RecyclerView(this).apply {
             id = View.generateViewId()
             setHasFixedSize(false)
             clipToPadding = false
-            setPadding(4, 10, 4, 16)
+            setPadding(4, 8, 4, 12)
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
             isFocusable = true
             layoutManager = LinearLayoutManager(this@PlayerActivity, LinearLayoutManager.VERTICAL, false)
             adapter = PackageChannelAdapter(packageChannels)
         }
+
         packageListView = list
         panel.addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
 
         val hint = TextView(this).apply {
-            text = "OK: اختيار القناة   •   BACK: إخفاء القائمة   •   EXIT: الخروج"
+            text = "OK: اختيار   •   ▲▼: تنقل   •   BACK: إخفاء"
             textSize = 13f
             setTextColor(0xFFB8C0CC.toInt())
             gravity = Gravity.CENTER
         }
+
         panel.addView(hint, LinearLayout.LayoutParams(-1, 34))
 
-        val lp = FrameLayout.LayoutParams(-1, -1).apply {
-            gravity = Gravity.CENTER
-            setMargins(70, 55, 70, 45)
+        val lp = FrameLayout.LayoutParams(560, -1).apply {
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            setMargins(28, 28, 0, 28)
         }
+
         root.addView(panel, lp)
         return panel
     }
@@ -415,7 +427,7 @@ class PlayerActivity : AppCompatActivity() {
             val row = LinearLayout(this@PlayerActivity).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(18, 8, 18, 8)
+                setPadding(12, 5, 12, 5)
                 isFocusable = true
                 isClickable = true
                 background = getDrawable(R.drawable.bg_card)
@@ -441,7 +453,7 @@ class PlayerActivity : AppCompatActivity() {
 
             row.addView(
                 number,
-                LinearLayout.LayoutParams(52, -1)
+                LinearLayout.LayoutParams(48, -1)
             )
 
             val image = ImageView(this@PlayerActivity).apply {
@@ -451,7 +463,7 @@ class PlayerActivity : AppCompatActivity() {
 
             row.addView(
                 image,
-                LinearLayout.LayoutParams(64, 58)
+                LinearLayout.LayoutParams(58, 54)
             )
 
             val name = TextView(this@PlayerActivity).apply {
@@ -477,15 +489,32 @@ class PlayerActivity : AppCompatActivity() {
                 switchChannel(ch)
             }
 
+            row.setOnKeyListener { _, keyCode, event ->
+                if (event.action == KeyEvent.ACTION_DOWN &&
+                    (keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+                     keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    switchChannel(ch)
+                    true
+                } else {
+                    false
+                }
+            }
+
             row.setOnFocusChangeListener { v, hasFocus ->
                 if (hasFocus) {
-                    v.scaleX = 1.02f
-                    v.scaleY = 1.02f
-                    v.elevation = 10f
+                    v.scaleX = 1.015f
+                    v.scaleY = 1.015f
+                    v.elevation = 12f
+                    v.setBackgroundColor(0xFF8B2FD0.toInt())
                 } else {
                     v.scaleX = 1f
                     v.scaleY = 1f
                     v.elevation = 2f
+                    v.background = if (ch.id == currentChannelId) {
+                        solid(0xFF6A4C93.toInt(), 10f)
+                    } else {
+                        getDrawable(R.drawable.bg_card)
+                    }
                 }
             }
 

@@ -155,7 +155,9 @@ class ChannelsActivity : AppCompatActivity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        val live = homeCard("▶", "LIVE", "8 قنوات رياضية", purple2, 0xFF25104C.toInt()) { showLive() }
+        val liveCount = sportsOnly().size
+        val liveDetail = if (liveCount > 0) "$liveCount قنوات رياضية" else "جاري تحميل القنوات"
+        val live = homeCard("▶", "LIVE", liveDetail, purple2, 0xFF25104C.toInt()) { showLive() }
         val social = homeCard("◎", "SOCIAL", "روابط التواصل", 0xFF1767A8.toInt(), 0xFF10243F.toInt()) { showSocial() }
         val settings = homeCard("⚙", "SETTINGS", "الإعدادات", 0xFF8B3F7D.toInt(), 0xFF321633.toInt()) { showSettings() }
         cards.addView(live, LinearLayout.LayoutParams(0, 350, 1f).apply { setMargins(12, 18, 12, 18) })
