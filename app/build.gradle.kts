@@ -35,9 +35,9 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("androidx.media3:media3-exoplayer:1.11.0")
-    implementation("androidx.media3:media3-ui:1.11.0")
-    implementation("androidx.media3:media3-exoplayer-hls:1.11.0")
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+    implementation("androidx.media3:media3-ui:1.5.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.5.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.json:json:20250107")
 }
