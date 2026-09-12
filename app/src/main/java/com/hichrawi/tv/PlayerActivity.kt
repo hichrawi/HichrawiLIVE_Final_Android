@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.videolan.libvlc.IVLCVout
+import org.videolan.libvlc.interfaces.IVLCVout
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
@@ -587,26 +587,6 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
         } catch (_: Exception) {
         }
         libVlc = null
-    }
-
-    override fun onNewLayout(
-        vout: IVLCVout,
-        width: Int,
-        height: Int,
-        visibleWidth: Int,
-        visibleHeight: Int,
-        sarNum: Int,
-        sarDen: Int
-    ) {
-        if (visibleWidth <= 0 || visibleHeight <= 0) return
-        videoSurface.post {
-            videoSurface.holder.setFixedSize(visibleWidth, visibleHeight)
-            videoSurface.layoutParams = videoSurface.layoutParams.apply {
-                this.width = ViewGroup.LayoutParams.MATCH_PARENT
-                this.height = ViewGroup.LayoutParams.MATCH_PARENT
-            }
-            videoSurface.requestLayout()
-        }
     }
 
     override fun onSurfacesCreated(vout: IVLCVout) = Unit
