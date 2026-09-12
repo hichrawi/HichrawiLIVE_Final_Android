@@ -197,7 +197,7 @@ class PlayerActivity : AppCompatActivity() {
                         requiresSecureDecoder,
                         requiresTunnelingDecoder
                     )
-                    .sortedByDescending { it.softwareOnly }
+                    .sortedBy { it.softwareOnly }
             }
             .setEnableDecoderFallback(true)
 
