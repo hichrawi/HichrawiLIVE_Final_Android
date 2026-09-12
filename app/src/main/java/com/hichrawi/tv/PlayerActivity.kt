@@ -206,15 +206,15 @@ class PlayerActivity : AppCompatActivity() {
         val trackSelector = DefaultTrackSelector(this).apply {
             setParameters(
                 buildUponParameters()
-                    .setMaxVideoSize(1920, 1080)
-                    .setMaxVideoBitrate(8_000_000)
+                    .setMaxVideoSize(1280, 720)
+                    .setMaxVideoBitrate(5_000_000)
             )
         }
 
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                8_000,
-                30_000,
+                12_000,
+                45_000,
                 1_500,
                 3_000
             )
@@ -225,6 +225,14 @@ class PlayerActivity : AppCompatActivity() {
             .setTrackSelector(trackSelector)
             .setLoadControl(loadControl)
             .setMediaSourceFactory(mediaSourceFactory)
+            .apply {
+                if (isTvDevice) {
+                    trackSelector.setParameters(
+                        trackSelector.buildUponParameters()
+                            .setTunnelingEnabled(true)
+                    )
+                }
+            }
             .build()
             .also { p ->
                 playerView.player = p
