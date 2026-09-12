@@ -21,6 +21,8 @@ import androidx.media3.common.Player
 import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -201,7 +203,27 @@ class PlayerActivity : AppCompatActivity() {
             }
             .setEnableDecoderFallback(true)
 
+        val trackSelector = DefaultTrackSelector(this).apply {
+            setParameters(
+                buildUponParameters()
+                    .setMaxVideoSize(1920, 1080)
+                    .setMaxVideoBitrate(8_000_000)
+            )
+        }
+
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                15_000,
+                60_000,
+                1_500,
+                3_000
+            )
+            .setPrioritizeTimeOverSizeThresholds(true)
+            .build()
+
         player = ExoPlayer.Builder(this, renderersFactory)
+            .setTrackSelector(trackSelector)
+            .setLoadControl(loadControl)
             .setMediaSourceFactory(mediaSourceFactory)
             .build()
             .also { p ->
