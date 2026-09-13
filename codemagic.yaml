@@ -14,4 +14,4 @@ workflows:
         script: |
           gradle assembleRelease
     artifacts:
-      - app/build/outputs/apk/debug/*.apk
+      - app/build/outputs/apk/release/*.apk
