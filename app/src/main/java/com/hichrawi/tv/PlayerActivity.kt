@@ -581,26 +581,6 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
         libVlc = null
     }
 
-    override fun onNewLayout(
-        vout: IVLCVout,
-        width: Int,
-        height: Int,
-        visibleWidth: Int,
-        visibleHeight: Int,
-        sarNum: Int,
-        sarDen: Int
-    ) {
-        if (visibleWidth <= 0 || visibleHeight <= 0) return
-        videoSurface.post {
-            videoSurface.holder.setFixedSize(visibleWidth, visibleHeight)
-            videoSurface.layoutParams = videoSurface.layoutParams.apply {
-                this.width = ViewGroup.LayoutParams.MATCH_PARENT
-                this.height = ViewGroup.LayoutParams.MATCH_PARENT
-            }
-            videoSurface.requestLayout()
-        }
-    }
-
     override fun onSurfacesCreated(vout: IVLCVout) = Unit
 
     override fun onSurfacesDestroyed(vout: IVLCVout) = Unit
