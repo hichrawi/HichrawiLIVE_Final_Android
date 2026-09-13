@@ -42,7 +42,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("org.videolan.android:libvlc-all:3.7.0")
+    implementation("org.videolan.android:libvlc-all:3.4.9")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.json:json:20250107")
 }
