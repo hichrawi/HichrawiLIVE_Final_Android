@@ -171,9 +171,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
                 "2",
                 "--avcodec-skip-idct",
                 "2",
-                "--network-caching=3000",
-                "--androidwindow-chroma",
-                "RV32"
+                "--network-caching=3000"
             )
 
             libVlc = LibVLC(this, options).also {
