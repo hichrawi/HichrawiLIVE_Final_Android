@@ -165,13 +165,8 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
         try {
             val options = arrayListOf(
                 "--audio-time-stretch",
-                "--avcodec-skiploopfilter",
-                "2",
-                "--avcodec-skip-frame",
-                "2",
-                "--avcodec-skip-idct",
-                "2",
-                "--network-caching=3000"
+                "--network-caching=6000",
+                "--http-reconnect"
             )
 
             libVlc = LibVLC(this, options).also {
@@ -209,7 +204,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
             vlcPlayer = vlc
 
             val media = Media(libVlc, Uri.parse(url)).also {
-                it.addOption(":network-caching=3000")
+                it.addOption(":network-caching=6000")
                 it.addOption(":http-reconnect=true")
             }
             currentMedia = media
