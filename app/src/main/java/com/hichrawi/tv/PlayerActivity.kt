@@ -165,7 +165,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
         try {
             val options = arrayListOf(
                 "--audio-time-stretch",
-                "--network-caching=6000",
+                "--network-caching=1500",
                 "--http-reconnect"
             )
 
@@ -204,7 +204,8 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
             vlcPlayer = vlc
 
             val media = Media(libVlc, Uri.parse(url)).also {
-                it.addOption(":network-caching=6000")
+                it.setHWDecoderEnabled(true, false)
+                it.addOption(":network-caching=1500")
                 it.addOption(":http-reconnect=true")
             }
             currentMedia = media
