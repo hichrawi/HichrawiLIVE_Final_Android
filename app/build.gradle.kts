@@ -12,8 +12,8 @@ android {
         applicationId = "com.hichrawi.tv"
         minSdk = 23
         targetSdk = 35
-        versionCode = 14
-        versionName = "2.3.1"
+        versionCode = 13
+        versionName = "2.3.0"
     }
 
     buildFeatures { buildConfig = true }
@@ -38,6 +38,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 
