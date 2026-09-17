@@ -12,8 +12,12 @@ android {
         applicationId = "com.hichrawi.tv"
         minSdk = 23
         targetSdk = 35
-        versionCode = 13
-        versionName = "2.3.0"
+        versionCode = 15
+        versionName = "2.4.0"
+
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
     }
 
     buildFeatures { buildConfig = true }
