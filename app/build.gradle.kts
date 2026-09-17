@@ -11,7 +11,7 @@ android {
     defaultConfig {
         applicationId = "com.hichrawi.tv"
         minSdk = 23
-        targetSdk = 27
+        targetSdk = 35
         versionCode = 16
         versionName = "2.5.0"
 
