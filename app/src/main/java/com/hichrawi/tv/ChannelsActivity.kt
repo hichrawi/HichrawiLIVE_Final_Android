@@ -252,7 +252,7 @@ class ChannelsActivity : AppCompatActivity() {
                 setOnFocusChangeListener { v, hasFocus ->
                     if (hasFocus) {
                         v.background = bgDrawable(0xFF8B2FD0.toInt(), 0xFF5A1E9A.toInt(), 14f, gold)
-                        v.setTextColor(Color.WHITE)
+                        (v as TextView).setTextColor(Color.WHITE)
                         v.scaleX = 1.04f
                         v.scaleY = 1.04f
                     } else {
@@ -261,7 +261,7 @@ class ChannelsActivity : AppCompatActivity() {
                             solid(gold, 14f, gold)
                         else
                             bgDrawable(0xFF2B2140.toInt(), 0xFF151020.toInt(), 14f)
-                        v.setTextColor(if (selected) 0xFF160B20.toInt() else Color.WHITE)
+                        (v as TextView).setTextColor(if (selected) 0xFF160B20.toInt() else Color.WHITE)
                         v.scaleX = 1f
                         v.scaleY = 1f
                     }
@@ -401,6 +401,19 @@ class ChannelsActivity : AppCompatActivity() {
             list.post { list.getChildAt(0)?.requestFocus() }
         }
     }
+
+    private fun sportsOnly(): List<Api.Channel> = allChannels
+        .filter { it.name.contains("HichrawiSport", ignoreCase = true) }
+        .sortedWith(
+            compareBy<Api.Channel> {
+                Regex("(?i)HichrawiSport(\\d+)")
+                    .find(it.name.replace(" ", ""))
+                    ?.groupValues
+                    ?.getOrNull(1)
+                    ?.toIntOrNull()
+                    ?: 9999
+            }.thenBy { it.sortOrder }.thenBy { it.id }
+        )
 
     private inner class LiveAdapter(private val items: List<Api.Channel>) : RecyclerView.Adapter<LiveAdapter.Holder>() {
         inner class Holder(val row: LinearLayout) : RecyclerView.ViewHolder(row)
