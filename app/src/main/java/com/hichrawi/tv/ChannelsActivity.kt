@@ -198,10 +198,249 @@ class ChannelsActivity : AppCompatActivity() {
         backButton.setOnClickListener { back() }
     }
 
+    private var packageChannelsMode = false
+
     private fun showLive() {
         page = Page.LIVE
         pageHeader { showHome() }
         title.text = "LIVE TV"
+        content.removeAllViews()
+
+        if (packageChannelsMode) {
+            showPackageChannels()
+        } else {
+            showPackageChooser()
+        }
+    }
+
+    private fun showPackageChooser() {
+        val outer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(20, 8, 20, 20)
+        }
+
+        outer.addView(
+            tv("اختر الباقة", 27f, text, true),
+            LinearLayout.LayoutParams(-1, 52)
+        )
+
+        outer.addView(
+            tv("اختار الباقة لمشاهدة القنوات", 15f, muted),
+            LinearLayout.LayoutParams(-1, 36)
+        )
+
+        val scroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            isFocusable = false
+        }
+
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(25, 20, 25, 30)
+        }
+
+        if (allPackages.isEmpty()) {
+            allPackages = listOf(
+                Api.Package(
+                    1,
+                    "Hichrawi Sport",
+                    sportsOnly().map { it.id },
+                    null
+                ),
+                Api.Package(
+                    2,
+                    "Sport World",
+                    emptyList(),
+                    null
+                )
+            )
+        }
+
+        allPackages.forEachIndexed { index, pkg ->
+            row.addView(
+                packageCard(pkg, index),
+                LinearLayout.LayoutParams(245, 315).apply {
+                    setMargins(18, 10, 18, 10)
+                }
+            )
+        }
+
+        scroll.addView(row)
+
+        outer.addView(
+            scroll,
+            LinearLayout.LayoutParams(-1, 0, 1f)
+        )
+
+        content.addView(outer)
+
+        row.getChildAt(0)?.requestFocus()
+    }
+
+    private fun packageCard(
+        pkg: Api.Package,
+        index: Int
+    ): LinearLayout {
+
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(15, 15, 15, 15)
+
+            background = bgDrawable(
+                0xFF21122F.toInt(),
+                0xFF0D0915.toInt(),
+                24f
+            )
+
+            isFocusable = true
+            isClickable = true
+            stateListAnimator = null
+            elevation = 5f
+
+            setOnFocusChangeListener { v, hasFocus ->
+
+                v.background =
+                    if (hasFocus) {
+                        bgDrawable(
+                            0xFF8B2FD0.toInt(),
+                            0xFF351052.toInt(),
+                            24f,
+                            gold
+                        )
+                    } else {
+                        bgDrawable(
+                            0xFF21122F.toInt(),
+                            0xFF0D0915.toInt(),
+                            24f
+                        )
+                    }
+
+                v.scaleX = if (hasFocus) 1.06f else 1f
+                v.scaleY = if (hasFocus) 1.06f else 1f
+                v.elevation = if (hasFocus) 22f else 5f
+            }
+
+            setOnClickListener {
+                selectedPackageIndex = index
+                packageChannelsMode = true
+                showLive()
+            }
+        }
+
+        val logoFrame = FrameLayout(this).apply {
+            background = bgDrawable(
+                0xFF32144D.toInt(),
+                0xFF100A1C.toInt(),
+                300f,
+                0xFF8B2FD0.toInt()
+            )
+            clipToOutline = true
+
+            outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(
+                    view: View,
+                    outline: android.graphics.Outline
+                ) {
+                    outline.setOval(
+                        0,
+                        0,
+                        view.width,
+                        view.height
+                    )
+                }
+            }
+        }
+
+        val logo = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            clipToOutline = true
+        }
+
+        logoFrame.addView(
+            logo,
+            FrameLayout.LayoutParams(-1, -1)
+        )
+
+        val initials = pkg.name
+            .trim()
+            .split(Regex("\\s+"))
+            .filter { it.isNotBlank() }
+            .take(2)
+            .joinToString("") {
+                it.first().uppercase()
+            }
+            .ifBlank { "TV" }
+
+        val fallback = tv(
+            initials,
+            44f,
+            gold,
+            true
+        )
+
+        logoFrame.addView(
+            fallback,
+            FrameLayout.LayoutParams(-1, -1)
+        )
+
+        pkg.logoUrl
+            ?.takeIf { it.isNotBlank() }
+            ?.let { url ->
+                fallback.visibility = View.GONE
+                loadImage(url, logo)
+            }
+
+        card.addView(
+            logoFrame,
+            LinearLayout.LayoutParams(205, 205).apply {
+                setMargins(0, 5, 0, 12)
+            }
+        )
+
+        card.addView(
+            tv(
+                pkg.name,
+                22f,
+                text,
+                true
+            ),
+            LinearLayout.LayoutParams(-1, 48)
+        )
+
+        card.addView(
+            tv(
+                pkg.channelIds.size.toString() + " قناة",
+                14f,
+                muted
+            ),
+            LinearLayout.LayoutParams(-1, 30)
+        )
+
+        return card
+    }
+
+    private fun showPackageChannels() {
+
+        val selectedPackage =
+            allPackages.getOrNull(selectedPackageIndex)
+
+        if (selectedPackage == null) {
+            packageChannelsMode = false
+            showLive()
+            return
+        }
+
+        page = Page.LIVE
+
+        pageHeader {
+            packageChannelsMode = false
+            showLive()
+        }
+
+        title.text = selectedPackage.name
         content.removeAllViews()
 
         val outer = LinearLayout(this).apply {
@@ -209,83 +448,48 @@ class ChannelsActivity : AppCompatActivity() {
             setPadding(4, 4, 4, 8)
         }
 
-        // Dynamic package selector.
-        // Packages come from Firebase, so adding a package later does not require
-        // an APK update.
-        val packageScroll = HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            isFocusable = false
-        }
-
-        val packageRow = LinearLayout(this).apply {
+        val top = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(6, 8, 6, 8)
         }
 
-        if (allPackages.isEmpty()) {
-            allPackages = listOf(
-                Api.Package(1, "Hichrawi Sport", sportsOnly().map { it.id }),
-                Api.Package(2, "Sport World", allChannels.map { it.id })
+        top.addView(
+            tv(
+                selectedPackage.name,
+                24f,
+                text,
+                true,
+                Gravity.CENTER_VERTICAL or Gravity.START
+            ),
+            LinearLayout.LayoutParams(
+                0,
+                66,
+                1f
             )
-        }
+        )
 
-        if (selectedPackageIndex >= allPackages.size) selectedPackageIndex = 0
-
-        allPackages.forEachIndexed { index, pkg ->
-            val card = TextView(this).apply {
-                text = pkg.name
-                textSize = 20f
-                setTextColor(if (index == selectedPackageIndex) 0xFF160B20.toInt() else Color.WHITE)
-                gravity = Gravity.CENTER
-                typeface = Typeface.DEFAULT_BOLD
-                background = if (index == selectedPackageIndex)
-                    solid(gold, 14f, gold)
-                else
-                    bgDrawable(0xFF2B2140.toInt(), 0xFF151020.toInt(), 14f)
-
-                isFocusable = true
-                isClickable = true
+        top.addView(
+            Button(this).apply {
+                text = "الباقات"
+                textSize = 15f
+                isAllCaps = false
+                setTextColor(this@ChannelsActivity.text)
+                background = solid(panel2, 12f)
                 stateListAnimator = null
-                setPadding(28, 8, 28, 8)
-
-                setOnFocusChangeListener { v, hasFocus ->
-                    if (hasFocus) {
-                        v.background = bgDrawable(0xFF8B2FD0.toInt(), 0xFF5A1E9A.toInt(), 14f, gold)
-                        (v as TextView).setTextColor(Color.WHITE)
-                        v.scaleX = 1.04f
-                        v.scaleY = 1.04f
-                    } else {
-                        val selected = index == selectedPackageIndex
-                        v.background = if (selected)
-                            solid(gold, 14f, gold)
-                        else
-                            bgDrawable(0xFF2B2140.toInt(), 0xFF151020.toInt(), 14f)
-                        (v as TextView).setTextColor(if (selected) 0xFF160B20.toInt() else Color.WHITE)
-                        v.scaleX = 1f
-                        v.scaleY = 1f
-                    }
-                }
+                isFocusable = true
 
                 setOnClickListener {
-                    selectedPackageIndex = index
+                    packageChannelsMode = false
                     showLive()
                 }
-            }
+            },
+            LinearLayout.LayoutParams(120, 52)
+        )
 
-            packageRow.addView(
-                card,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    62
-                ).apply {
-                    setMargins(8, 4, 8, 4)
-                }
-            )
-        }
-
-        packageScroll.addView(packageRow)
-        outer.addView(packageScroll, LinearLayout.LayoutParams(-1, 78))
+        outer.addView(
+            top,
+            LinearLayout.LayoutParams(-1, 74)
+        )
 
         val frame = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -294,14 +498,17 @@ class ChannelsActivity : AppCompatActivity() {
 
         val left = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = bgDrawable(0xFF24113D.toInt(), 0xFF100A1C.toInt(), 10f)
+            background = bgDrawable(
+                0xFF24113D.toInt(),
+                0xFF100A1C.toInt(),
+                10f
+            )
             setPadding(14, 12, 14, 12)
         }
 
-        val selectedPackage = allPackages.getOrNull(selectedPackageIndex)
         left.addView(
             tv(
-                selectedPackage?.name ?: "HICHRAWI SPORT",
+                "قنوات " + selectedPackage.name,
                 20f,
                 text,
                 true,
@@ -312,7 +519,7 @@ class ChannelsActivity : AppCompatActivity() {
 
         left.addView(
             tv(
-                "القنوات التابعة للباقة",
+                "اختار قناة ثم اضغط OK",
                 13f,
                 muted,
                 false,
@@ -322,17 +529,33 @@ class ChannelsActivity : AppCompatActivity() {
         )
 
         val list = RecyclerView(this).apply {
-            layoutManager = LinearLayoutManager(this@ChannelsActivity)
+            layoutManager =
+                LinearLayoutManager(this@ChannelsActivity)
+
             isFocusable = true
-            descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
+            descendantFocusability =
+                ViewGroup.FOCUS_AFTER_DESCENDANTS
+
             clipToPadding = false
             setPadding(0, 8, 0, 10)
         }
 
-        left.addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
+        left.addView(
+            list,
+            LinearLayout.LayoutParams(
+                -1,
+                0,
+                1f
+            )
+        )
+
         frame.addView(
             left,
-            LinearLayout.LayoutParams(0, -1, 0.42f).apply {
+            LinearLayout.LayoutParams(
+                0,
+                -1,
+                0.42f
+            ).apply {
                 setMargins(0, 0, 12, 0)
             }
         )
@@ -340,65 +563,106 @@ class ChannelsActivity : AppCompatActivity() {
         val info = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            background = bgDrawable(0xFF15101F.toInt(), 0xFF0A0810.toInt(), 10f)
+
+            background = bgDrawable(
+                0xFF15101F.toInt(),
+                0xFF0A0810.toInt(),
+                10f
+            )
+
             setPadding(30, 24, 30, 24)
         }
 
-        channelInfoLogo = ImageView(this).apply {
-            scaleType = ImageView.ScaleType.CENTER_INSIDE
-        }
+        channelInfoLogo =
+            ImageView(this).apply {
+                scaleType =
+                    ImageView.ScaleType.CENTER_INSIDE
+            }
 
         info.addView(
             channelInfoLogo,
             LinearLayout.LayoutParams(-1, 210)
         )
 
-        channelInfoName = tv("HichrawiSport1", 30f, text, true)
+        channelInfoName =
+            tv("", 30f, text, true)
+
         info.addView(
             channelInfoName,
             LinearLayout.LayoutParams(-1, 54)
         )
 
         info.addView(
-            tv("● LIVE", 18f, 0xFF69E28C.toInt(), true),
+            tv(
+                "● LIVE",
+                18f,
+                0xFF69E28C.toInt(),
+                true
+            ),
             LinearLayout.LayoutParams(-1, 42)
         )
 
         info.addView(
-            tv("OK : مشاهدة القناة", 15f, muted),
+            tv(
+                "OK : مشاهدة القناة",
+                15f,
+                muted
+            ),
             LinearLayout.LayoutParams(-1, 40)
         )
 
         frame.addView(
             info,
-            LinearLayout.LayoutParams(0, -1, 0.58f)
+            LinearLayout.LayoutParams(
+                0,
+                -1,
+                0.58f
+            )
         )
 
-        outer.addView(frame, LinearLayout.LayoutParams(-1, 0, 1f))
+        outer.addView(
+            frame,
+            LinearLayout.LayoutParams(
+                -1,
+                0,
+                1f
+            )
+        )
+
         content.addView(outer)
 
-        val visible = selectedPackage?.let { pkg ->
+        val visible =
             allChannels
-                .filter { it.id in pkg.channelIds }
+                .filter {
+                    it.id in selectedPackage.channelIds
+                }
                 .sortedWith(
                     compareBy<Api.Channel> {
                         Regex("(?i)HichrawiSport(\\d+)")
-                            .find(it.name.replace(" ", ""))
+                            .find(
+                                it.name.replace(" ", "")
+                            )
                             ?.groupValues
                             ?.getOrNull(1)
                             ?.toIntOrNull()
-                            ?: 9999
+                            ?: it.sortOrder
                     }
                     .thenBy { it.sortOrder }
                     .thenBy { it.id }
                 )
-        } ?: sportsOnly()
 
-        list.adapter = LiveAdapter(visible)
+        list.adapter =
+            LiveAdapter(visible)
 
         if (visible.isNotEmpty()) {
             updateChannelInfo(visible.first())
-            list.post { list.getChildAt(0)?.requestFocus() }
+
+            list.post {
+                list.getChildAt(0)?.requestFocus()
+            }
+        } else {
+            channelInfoName?.text =
+                "لا توجد قنوات"
         }
     }
 
@@ -653,7 +917,14 @@ class ChannelsActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (page != Page.HOME) showHome() else super.onBackPressed()
+        if (page == Page.LIVE && packageChannelsMode) {
+            packageChannelsMode = false
+            showLive()
+        } else if (page != Page.HOME) {
+            showHome()
+        } else {
+            super.onBackPressed()
+        }
     }
 
     override fun onStart() {

@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
  */
 object Api {
     data class Channel(val id: Long, val name: String, val logoUrl: String?, val sortOrder: Int, val streamUrl: String? = null)
-    data class Package(val id: Long, val name: String, val channelIds: List<Long>)
+    data class Package(val id: Long, val name: String, val channelIds: List<Long>, val logoUrl: String? = null)
 
     @Volatile private var initialized = false
 
@@ -172,7 +172,7 @@ object Api {
             val result = snap.documents.mapIndexedNotNull { index, doc ->
                 val d = doc.data ?: return@mapIndexedNotNull null
                 val ids = (d["channelIds"] as? List<*>)?.mapNotNull { number(it)?.toLong() }.orEmpty()
-                Package((number(d["packageId"] ?: d["id"]) ?: stableChannelId(doc.id)).toLong(), d["name"]?.toString() ?: "الباقة", ids)
+                Package((number(d["packageId"] ?: d["id"]) ?: stableChannelId(doc.id)).toLong(), d["name"]?.toString() ?: "الباقة", ids, (d["logoUrl"] ?: d["logo"])?.toString()?.takeIf { it.isNotBlank() })
             }
             if (result.isEmpty()) fallbackPackages(channels) else result
         } catch (_: Exception) { fallbackPackages(channels) }
