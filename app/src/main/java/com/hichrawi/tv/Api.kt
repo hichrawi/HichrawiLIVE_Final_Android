@@ -198,7 +198,7 @@ object Api {
         val sports = channels.filter { it.name.contains("sport", true) || it.name.contains("سبورت", true) || it.name.contains("رياض", true) }
         val result = mutableListOf<Package>()
         if (sports.isNotEmpty()) result += Package(1, "Hichrawi Sport", sports.map { it.id })
-        if (channels.isNotEmpty()) result += Package(2, "Sport World", channels.map { it.id })
+        result += Package(2, "Sport World", emptyList())
         return result
     }
 
