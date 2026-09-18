@@ -197,8 +197,8 @@ object Api {
     private fun fallbackPackages(channels: List<Channel>): List<Package> {
         val sports = channels.filter { it.name.contains("sport", true) || it.name.contains("سبورت", true) || it.name.contains("رياض", true) }
         val result = mutableListOf<Package>()
-        if (sports.isNotEmpty()) result += Package(1, "الباقة الرياضية", sports.map { it.id })
-        if (channels.isNotEmpty()) result += Package(2, "الباقة الكاملة", channels.map { it.id })
+        if (sports.isNotEmpty()) result += Package(1, "Hichrawi Sport", sports.map { it.id })
+        if (channels.isNotEmpty()) result += Package(2, "Sport World", channels.map { it.id })
         return result
     }
 

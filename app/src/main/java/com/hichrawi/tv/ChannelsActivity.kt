@@ -36,6 +36,8 @@ class ChannelsActivity : AppCompatActivity() {
     private var deviceId = 0L
     private var licenseJob: Job? = null
     private var allChannels: List<Api.Channel> = emptyList()
+    private var allPackages: List<Api.Package> = emptyList()
+    private var selectedPackageIndex = 0
     private var appSettings: Map<String, String> = emptyMap()
     private var channelInfoName: TextView? = null
     private var channelInfoLogo: ImageView? = null
@@ -202,9 +204,92 @@ class ChannelsActivity : AppCompatActivity() {
         title.text = "LIVE TV"
         content.removeAllViews()
 
+        val outer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(4, 4, 4, 8)
+        }
+
+        // Dynamic package selector.
+        // Packages come from Firebase, so adding a package later does not require
+        // an APK update.
+        val packageScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            isFocusable = false
+        }
+
+        val packageRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(6, 8, 6, 8)
+        }
+
+        if (allPackages.isEmpty()) {
+            allPackages = listOf(
+                Api.Package(1, "Hichrawi Sport", sportsOnly().map { it.id }),
+                Api.Package(2, "Sport World", allChannels.map { it.id })
+            )
+        }
+
+        if (selectedPackageIndex >= allPackages.size) selectedPackageIndex = 0
+
+        allPackages.forEachIndexed { index, pkg ->
+            val card = TextView(this).apply {
+                text = pkg.name
+                textSize = 20f
+                setTextColor(if (index == selectedPackageIndex) 0xFF160B20.toInt() else Color.WHITE)
+                gravity = Gravity.CENTER
+                typeface = Typeface.DEFAULT_BOLD
+                background = if (index == selectedPackageIndex)
+                    solid(gold, 14f, gold)
+                else
+                    bgDrawable(0xFF2B2140.toInt(), 0xFF151020.toInt(), 14f)
+
+                isFocusable = true
+                isClickable = true
+                stateListAnimator = null
+                setPadding(28, 8, 28, 8)
+
+                setOnFocusChangeListener { v, hasFocus ->
+                    if (hasFocus) {
+                        v.background = bgDrawable(0xFF8B2FD0.toInt(), 0xFF5A1E9A.toInt(), 14f, gold)
+                        v.setTextColor(Color.WHITE)
+                        v.scaleX = 1.04f
+                        v.scaleY = 1.04f
+                    } else {
+                        val selected = index == selectedPackageIndex
+                        v.background = if (selected)
+                            solid(gold, 14f, gold)
+                        else
+                            bgDrawable(0xFF2B2140.toInt(), 0xFF151020.toInt(), 14f)
+                        v.setTextColor(if (selected) 0xFF160B20.toInt() else Color.WHITE)
+                        v.scaleX = 1f
+                        v.scaleY = 1f
+                    }
+                }
+
+                setOnClickListener {
+                    selectedPackageIndex = index
+                    showLive()
+                }
+            }
+
+            packageRow.addView(
+                card,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    62
+                ).apply {
+                    setMargins(8, 4, 8, 4)
+                }
+            )
+        }
+
+        packageScroll.addView(packageRow)
+        outer.addView(packageScroll, LinearLayout.LayoutParams(-1, 78))
+
         val frame = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(4, 8, 4, 8)
+            setPadding(4, 4, 4, 4)
         }
 
         val left = LinearLayout(this).apply {
@@ -212,8 +297,29 @@ class ChannelsActivity : AppCompatActivity() {
             background = bgDrawable(0xFF24113D.toInt(), 0xFF100A1C.toInt(), 10f)
             setPadding(14, 12, 14, 12)
         }
-        left.addView(tv("HICHRAWI SPORT", 20f, text, true, Gravity.START), LinearLayout.LayoutParams(-1, 42))
-        left.addView(tv("القنوات الرياضية", 13f, muted, false, Gravity.START), LinearLayout.LayoutParams(-1, 28))
+
+        val selectedPackage = allPackages.getOrNull(selectedPackageIndex)
+        left.addView(
+            tv(
+                selectedPackage?.name ?: "HICHRAWI SPORT",
+                20f,
+                text,
+                true,
+                Gravity.START
+            ),
+            LinearLayout.LayoutParams(-1, 42)
+        )
+
+        left.addView(
+            tv(
+                "القنوات التابعة للباقة",
+                13f,
+                muted,
+                false,
+                Gravity.START
+            ),
+            LinearLayout.LayoutParams(-1, 28)
+        )
 
         val list = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@ChannelsActivity)
@@ -222,8 +328,14 @@ class ChannelsActivity : AppCompatActivity() {
             clipToPadding = false
             setPadding(0, 8, 0, 10)
         }
+
         left.addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
-        frame.addView(left, LinearLayout.LayoutParams(0, -1, 0.42f).apply { setMargins(0, 0, 12, 0) })
+        frame.addView(
+            left,
+            LinearLayout.LayoutParams(0, -1, 0.42f).apply {
+                setMargins(0, 0, 12, 0)
+            }
+        )
 
         val info = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -231,35 +343,64 @@ class ChannelsActivity : AppCompatActivity() {
             background = bgDrawable(0xFF15101F.toInt(), 0xFF0A0810.toInt(), 10f)
             setPadding(30, 24, 30, 24)
         }
-        channelInfoLogo = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_INSIDE }
-        info.addView(channelInfoLogo, LinearLayout.LayoutParams(-1, 210))
-        channelInfoName = tv("HichrawiSport1", 30f, text, true)
-        info.addView(channelInfoName, LinearLayout.LayoutParams(-1, 54))
-        info.addView(tv("● LIVE", 18f, 0xFF69E28C.toInt(), true), LinearLayout.LayoutParams(-1, 42))
-        info.addView(tv("OK : مشاهدة القناة", 15f, muted), LinearLayout.LayoutParams(-1, 40))
-        frame.addView(info, LinearLayout.LayoutParams(0, -1, 0.58f))
 
-        content.addView(frame)
-        val visible = sportsOnly()
+        channelInfoLogo = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+        }
+
+        info.addView(
+            channelInfoLogo,
+            LinearLayout.LayoutParams(-1, 210)
+        )
+
+        channelInfoName = tv("HichrawiSport1", 30f, text, true)
+        info.addView(
+            channelInfoName,
+            LinearLayout.LayoutParams(-1, 54)
+        )
+
+        info.addView(
+            tv("● LIVE", 18f, 0xFF69E28C.toInt(), true),
+            LinearLayout.LayoutParams(-1, 42)
+        )
+
+        info.addView(
+            tv("OK : مشاهدة القناة", 15f, muted),
+            LinearLayout.LayoutParams(-1, 40)
+        )
+
+        frame.addView(
+            info,
+            LinearLayout.LayoutParams(0, -1, 0.58f)
+        )
+
+        outer.addView(frame, LinearLayout.LayoutParams(-1, 0, 1f))
+        content.addView(outer)
+
+        val visible = selectedPackage?.let { pkg ->
+            allChannels
+                .filter { it.id in pkg.channelIds }
+                .sortedWith(
+                    compareBy<Api.Channel> {
+                        Regex("(?i)HichrawiSport(\\d+)")
+                            .find(it.name.replace(" ", ""))
+                            ?.groupValues
+                            ?.getOrNull(1)
+                            ?.toIntOrNull()
+                            ?: 9999
+                    }
+                    .thenBy { it.sortOrder }
+                    .thenBy { it.id }
+                )
+        } ?: sportsOnly()
+
         list.adapter = LiveAdapter(visible)
+
         if (visible.isNotEmpty()) {
             updateChannelInfo(visible.first())
             list.post { list.getChildAt(0)?.requestFocus() }
         }
     }
-
-    private fun sportsOnly(): List<Api.Channel> = allChannels
-        .filter { it.name.contains("HichrawiSport", ignoreCase = true) }
-        .sortedWith(
-            compareBy<Api.Channel> {
-                Regex("(?i)HichrawiSport(\\d+)")
-                    .find(it.name.replace(" ", ""))
-                    ?.groupValues
-                    ?.getOrNull(1)
-                    ?.toIntOrNull()
-                    ?: 9999
-            }.thenBy { it.sortOrder }.thenBy { it.id }
-        )
 
     private inner class LiveAdapter(private val items: List<Api.Channel>) : RecyclerView.Adapter<LiveAdapter.Holder>() {
         inner class Holder(val row: LinearLayout) : RecyclerView.ViewHolder(row)
@@ -394,9 +535,12 @@ class ChannelsActivity : AppCompatActivity() {
                 val state = Api.license(this@ChannelsActivity, deviceId)
                 if (!isLicenseActive(state)) throw Exception("الاشتراك غير فعال أو منتهي")
                 val channels = Api.channels(this@ChannelsActivity, deviceId)
+                val packages = Api.packages(this@ChannelsActivity, deviceId, channels)
                 val settings = Api.settings(this@ChannelsActivity, deviceId)
                 withContext(Dispatchers.Main) {
                     allChannels = channels
+                    allPackages = packages
+                    if (selectedPackageIndex >= allPackages.size) selectedPackageIndex = 0
                     appSettings = settings
                     when (page) {
                         Page.HOME -> showHome()
