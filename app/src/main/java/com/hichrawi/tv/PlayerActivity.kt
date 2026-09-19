@@ -193,7 +193,19 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
                             }
                             MediaPlayer.Event.EncounteredError -> {
                                 runOnUiThread {
-                                    showPlaybackError("تعذر تشغيل البث")
+                                    if (currentStreamUrl == url) {
+                                        message.text = "إعادة الاتصال بالبث..."
+                                        message.visibility = View.VISIBLE
+
+                                        mainHandler.removeCallbacksAndMessages(null)
+                                        mainHandler.postDelayed({
+                                            if (currentStreamUrl == url && !isFinishing && !isDestroyed) {
+                                                prepareVlc(url)
+                                            }
+                                        }, 2000)
+                                    } else {
+                                        showPlaybackError("تعذر تشغيل البث")
+                                    }
                                 }
                             }
                         }
