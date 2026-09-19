@@ -12,8 +12,10 @@ workflows:
       - name: Set Android SDK location
         script: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
-      - name: Build final debug APK
+      - name: Build final Release APK and AAB
         script: |
           gradle assembleRelease
+          gradle bundleRelease
     artifacts:
       - app/build/outputs/apk/release/*.apk
+      - app/build/outputs/bundle/release/*.aab
