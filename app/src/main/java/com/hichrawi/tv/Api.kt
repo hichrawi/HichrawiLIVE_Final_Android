@@ -17,7 +17,22 @@ import java.util.concurrent.TimeUnit
  */
 object Api {
     data class Channel(val id: Long, val name: String, val logoUrl: String?, val sortOrder: Int, val streamUrl: String? = null)
-    data class Package(val id: Long, val name: String, val channelIds: List<Long>, val logoUrl: String? = null)
+    data class PackageChannel(
+        val id: String,
+        val name: String,
+        val logoUrl: String?,
+        val sortOrder: Int,
+        val streamUrl: String?,
+        val enabled: Boolean = true
+    )
+
+    data class Package(
+        val id: Long,
+        val name: String,
+        val channelIds: List<Long>,
+        val logoUrl: String? = null,
+        val channels: List<PackageChannel> = emptyList()
+    )
 
     @Volatile private var initialized = false
 
@@ -167,40 +182,241 @@ object Api {
 
     fun packages(context: Context, deviceId: Long, channels: List<Channel>): List<Package> {
         ensureAnonymousAuth(context)
+
         return try {
-            val snap = Tasks.await(db(context).collection("packages").get(), 20, TimeUnit.SECONDS)
-            val result = snap.documents.mapIndexedNotNull { index, doc ->
-                val d = doc.data ?: return@mapIndexedNotNull null
-                val ids = (d["channelIds"] as? List<*>)?.mapNotNull { number(it)?.toLong() }.orEmpty()
-                Package((number(d["packageId"] ?: d["id"]) ?: stableChannelId(doc.id)).toLong(), d["name"]?.toString() ?: "الباقة", ids, (d["logoUrl"] ?: d["logo"])?.toString()?.takeIf { it.isNotBlank() })
+            val snap = Tasks.await(
+                db(context).collection("packages").get(),
+                20,
+                TimeUnit.SECONDS
+            )
+
+            val result = snap.documents.mapNotNull { doc ->
+                val d = doc.data ?: return@mapNotNull null
+
+                val packageId =
+                    (number(d["packageId"] ?: d["id"]) ?: stableChannelId(doc.id)).toLong()
+
+                val name =
+                    d["name"]?.toString()?.trim().orEmpty()
+
+                if (name.isBlank()) return@mapNotNull null
+
+                val logoUrl =
+                    (d["logoUrl"] ?: d["logo"])
+                        ?.toString()
+                        ?.trim()
+                        ?.takeIf { it.isNotBlank() }
+
+                /*
+                 * القنوات القديمة المرتبطة عبر channelIds.
+                 * لا نغيّر مصدرها ولا اسمها ولا شعارها ولا رابطها.
+                 */
+                val channelIds =
+                    (d["channelIds"] as? List<*>)
+                        ?.mapNotNull { number(it)?.toLong() }
+                        .orEmpty()
+
+                val legacyChannels =
+                    channels
+                        .filter { it.id in channelIds }
+                        .map {
+                            PackageChannel(
+                                id = "global_${it.id}",
+                                name = it.name,
+                                logoUrl = it.logoUrl,
+                                sortOrder = it.sortOrder,
+                                streamUrl = it.streamUrl,
+                                enabled = true
+                            )
+                        }
+
+                /*
+                 * القنوات الجديدة الخاصة بهذه الباقة.
+                 *
+                 * Firestore:
+                 * channels: [
+                 *   {
+                 *     id,
+                 *     name,
+                 *     streamUrl,
+                 *     logoUrl,
+                 *     sortOrder,
+                 *     enabled
+                 *   }
+                 * ]
+                 */
+                val packageChannels =
+                    (d["channels"] as? List<*>)
+                        ?.mapIndexedNotNull { index, raw ->
+                            val map = raw as? Map<*, *>
+                                ?: return@mapIndexedNotNull null
+
+                            val channelId =
+                                map["id"]
+                                    ?.toString()
+                                    ?.trim()
+                                    ?.takeIf { it.isNotBlank() }
+                                    ?: "pc_${doc.id}_$index"
+
+                            val channelName =
+                                map["name"]
+                                    ?.toString()
+                                    ?.trim()
+                                    .orEmpty()
+
+                            if (channelName.isBlank()) {
+                                return@mapIndexedNotNull null
+                            }
+
+                            val streamUrl =
+                                (map["streamUrl"] ?: map["stream"] ?: map["url"])
+                                    ?.toString()
+                                    ?.trim()
+                                    ?.takeIf { it.isNotBlank() }
+
+                            val channelLogo =
+                                (map["logoUrl"] ?: map["logo"])
+                                    ?.toString()
+                                    ?.trim()
+                                    ?.takeIf { it.isNotBlank() }
+
+                            val sortOrder =
+                                (number(map["sortOrder"] ?: map["sort_order"])?.toInt()
+                                    ?: index + 1)
+
+                            val enabled =
+                                map["enabled"] != false
+
+                            PackageChannel(
+                                id = channelId,
+                                name = channelName,
+                                logoUrl = channelLogo,
+                                sortOrder = sortOrder,
+                                streamUrl = streamUrl,
+                                enabled = enabled
+                            )
+                        }
+                        .orEmpty()
+
+                /*
+                 * القنوات القديمة + القنوات الخاصة.
+                 * لا يوجد أي نسخ للقنوات الخاصة إلى باقات أخرى.
+                 */
+                val allPackageChannels =
+                    (legacyChannels + packageChannels)
+                        .filter { it.enabled }
+                        .distinctBy { it.id }
+                        .sortedBy { it.sortOrder }
+
+                Package(
+                    id = packageId,
+                    name = name,
+                    channelIds = channelIds,
+                    logoUrl = logoUrl,
+                    channels = allPackageChannels
+                )
             }
-            if (result.isEmpty()) fallbackPackages(channels) else result
-        } catch (_: Exception) { fallbackPackages(channels) }
+
+            val finalPackages = result.toMutableList()
+
+            val hasSport = finalPackages.any {
+                it.name.equals("Hichrawi Sport", ignoreCase = true)
+            }
+
+            if (!hasSport) {
+                val sports = channels.filter {
+                    it.name.contains("sport", true) ||
+                    it.name.contains("سبورت", true) ||
+                    it.name.contains("رياض", true)
+                }
+
+                if (sports.isNotEmpty()) {
+                    finalPackages.add(
+                        Package(
+                            id = 1L,
+                            name = "Hichrawi Sport",
+                            channelIds = sports.map { it.id },
+                            channels = sports.map {
+                                PackageChannel(
+                                    id = "global_${it.id}",
+                                    name = it.name,
+                                    logoUrl = it.logoUrl,
+                                    sortOrder = it.sortOrder,
+                                    streamUrl = it.streamUrl
+                                )
+                            }
+                        )
+                    )
+                }
+            }
+
+            finalPackages
+
+        } catch (_: Exception) {
+            fallbackPackages(channels)
+        }
     }
 
+
+    private fun fallbackPackages(channels: List<Channel>): List<Package> {
+        val sports = channels.filter {
+            it.name.contains("sport", true) ||
+            it.name.contains("سبورت", true) ||
+            it.name.contains("رياض", true)
+        }
+
+        val result = mutableListOf<Package>()
+
+        if (sports.isNotEmpty()) {
+            result += Package(
+                id = 1L,
+                name = "Hichrawi Sport",
+                channelIds = sports.map { it.id },
+                channels = sports.map {
+                    PackageChannel(
+                        id = "global_${it.id}",
+                        name = it.name,
+                        logoUrl = it.logoUrl,
+                        sortOrder = it.sortOrder,
+                        streamUrl = it.streamUrl
+                    )
+                }
+            )
+        }
+
+        result += Package(
+            id = 2L,
+            name = "Sport World",
+            channelIds = emptyList(),
+            channels = emptyList()
+        )
+
+        return result
+    }
 
     /** Public app settings stored in Firestore settings/app. */
     fun settings(context: Context, deviceId: Long): Map<String, String> {
         ensureAnonymousAuth(context)
+
         return try {
-            val snap = Tasks.await(db(context).collection("settings").document("app").get(), 20, TimeUnit.SECONDS)
+            val snap = Tasks.await(
+                db(context).collection("settings").document("app").get(),
+                20,
+                TimeUnit.SECONDS
+            )
+
             if (!snap.exists()) return emptyMap()
+
             snap.data.orEmpty().mapNotNull { (key, value) ->
                 val text = value?.toString()?.trim().orEmpty()
                 if (text.isBlank()) null else key to text
             }.toMap()
+
         } catch (_: Exception) {
             emptyMap()
         }
     }
 
-    private fun fallbackPackages(channels: List<Channel>): List<Package> {
-        val sports = channels.filter { it.name.contains("sport", true) || it.name.contains("سبورت", true) || it.name.contains("رياض", true) }
-        val result = mutableListOf<Package>()
-        if (sports.isNotEmpty()) result += Package(1, "Hichrawi Sport", sports.map { it.id })
-        result += Package(2, "Sport World", emptyList())
-        return result
-    }
 
     private fun mapToJson(value: Map<*, *>): org.json.JSONObject {
         val out = org.json.JSONObject()

@@ -116,9 +116,13 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
             return
         }
 
-        logo.setImageResource(R.drawable.hichrawi_live_logo)
-        logo.visibility = View.VISIBLE
-        if (!url.isNullOrBlank()) loadWatermark(url)
+        if (!url.isNullOrBlank()) {
+            logo.visibility = View.VISIBLE
+            loadWatermark(url)
+        } else {
+            logo.setImageDrawable(null)
+            logo.visibility = View.GONE
+        }
     }
 
     private fun startPlayback(channelId: Long) {
@@ -299,11 +303,57 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
             prefs.getLong("server_device_id", 0L)
         )
 
+        val packageId = intent.getLongExtra("package_id", -1L)
+        val packageName = intent.getStringExtra("package_name")
+            ?.trim()
+            .orEmpty()
+
         packageJob?.cancel()
         packageJob = lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val channels = Api.channels(this@PlayerActivity, deviceId)
+                val globalChannels = Api.channels(this@PlayerActivity, deviceId)
+                val packages = Api.packages(this@PlayerActivity, deviceId, globalChannels)
+
+                val selectedPackage =
+                    packages.firstOrNull {
+                        packageName.isNotBlank() &&
+                            it.name.trim().equals(packageName, ignoreCase = true)
+                    }
+                        ?: packages.firstOrNull {
+                            it.id == packageId
+                        }
+
+                val channels = if (selectedPackage != null) {
+                    selectedPackage.channels
+                        .map { pc ->
+                            Api.Channel(
+                                id = ("package_" + selectedPackage.id + "_" + pc.id)
+                                    .hashCode()
+                                    .toLong(),
+                                name = pc.name,
+                                logoUrl = pc.logoUrl,
+                                sortOrder = pc.sortOrder,
+                                streamUrl = pc.streamUrl
+                            )
+                        }
+                        .sortedWith(
+                            compareBy<Api.Channel> {
+                                Regex("(?i)HichrawiSport(\\d+)")
+                                    .find(it.name.replace(" ", ""))
+                                    ?.groupValues
+                                    ?.getOrNull(1)
+                                    ?.toIntOrNull()
+                                    ?: it.sortOrder
+                            }
+                            .thenBy { it.sortOrder }
+                            .thenBy { it.id }
+                        )
+                } else {
+                    globalChannels
+                }
+
                 packageChannels = channels
+
                 withContext(Dispatchers.Main) {
                     if (packageChannels.isEmpty()) {
                         Toast.makeText(
@@ -503,6 +553,9 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
     private fun switchChannel(channel: Api.Channel) {
         currentChannelId = channel.id
         currentChannelName = channel.name
+
+        intent.putExtra("direct_url", channel.streamUrl)
+
         setChannelLogo(channel.name, channel.logoUrl)
         message.text = channel.name
         hidePackageOverlay()

@@ -412,7 +412,7 @@ class ChannelsActivity : AppCompatActivity() {
 
         card.addView(
             tv(
-                pkg.channelIds.size.toString() + " قناة",
+                pkg.channels.size.toString() + " قناة",
                 14f,
                 muted
             ),
@@ -631,10 +631,18 @@ class ChannelsActivity : AppCompatActivity() {
 
         content.addView(outer)
 
+        val packageChannels = selectedPackage.channels
+
         val visible =
-            allChannels
-                .filter {
-                    it.id in selectedPackage.channelIds
+            packageChannels
+                .mapIndexed { index, pc ->
+                    Api.Channel(
+                        id = ("package_" + selectedPackage.id + "_" + pc.id).hashCode().toLong(),
+                        name = pc.name,
+                        logoUrl = pc.logoUrl,
+                        sortOrder = pc.sortOrder,
+                        streamUrl = pc.streamUrl
+                    )
                 }
                 .sortedWith(
                     compareBy<Api.Channel> {
@@ -716,7 +724,14 @@ class ChannelsActivity : AppCompatActivity() {
 
     private fun updateChannelInfo(ch: Api.Channel) {
         channelInfoName?.text = ch.name
-        ch.logoUrl?.let { url -> channelInfoLogo?.let { loadImage(url, it) } }
+
+        channelInfoLogo?.setImageDrawable(null)
+
+        ch.logoUrl
+            ?.takeIf { it.isNotBlank() }
+            ?.let { url ->
+                channelInfoLogo?.let { loadImage(url, it) }
+            }
     }
 
     private fun showSocial() {
@@ -858,6 +873,12 @@ class ChannelsActivity : AppCompatActivity() {
             putExtra("channel_id", ch.id)
             putExtra("channel_name", ch.name)
             putExtra("logo_url", ch.logoUrl)
+            val selectedPackage = allPackages.getOrNull(selectedPackageIndex)
+            putExtra("package_id", selectedPackage?.id ?: -1L)
+            putExtra("package_name", selectedPackage?.name ?: "")
+            if (!ch.streamUrl.isNullOrBlank()) {
+                putExtra("direct_url", ch.streamUrl)
+            }
         })
     }
 
