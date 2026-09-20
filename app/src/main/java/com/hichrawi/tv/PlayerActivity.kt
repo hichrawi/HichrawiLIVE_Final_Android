@@ -1,5 +1,7 @@
 package com.hichrawi.tv
 
+import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
@@ -440,6 +442,19 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
                 }
             }
         }
+    }
+
+    private fun switchChannel(channel: Api.Channel) {
+        currentChannelId = channel.id
+        currentChannelName = channel.name
+
+        intent.putExtra("direct_url", channel.streamUrl)
+
+        setChannelLogo(channel.name, channel.logoUrl)
+        message.text = channel.name
+        reportPresence()
+        hidePackageOverlay()
+        startPlayback(channel.id)
     }
 
     private fun switchAdjacentChannel(direction: Int) {
