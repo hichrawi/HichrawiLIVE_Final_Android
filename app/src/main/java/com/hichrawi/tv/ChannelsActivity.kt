@@ -423,9 +423,7 @@ class ChannelsActivity : AppCompatActivity() {
     }
 
     private fun showPackageChannels() {
-
-        val selectedPackage =
-            allPackages.getOrNull(selectedPackageIndex)
+        val selectedPackage = allPackages.getOrNull(selectedPackageIndex)
 
         if (selectedPackage == null) {
             packageChannelsMode = false
@@ -443,32 +441,55 @@ class ChannelsActivity : AppCompatActivity() {
         title.text = selectedPackage.name
         content.removeAllViews()
 
+        /*
+         * UNIVERSAL PACKAGE CHANNEL PAGE
+         * The exact same layout is used for every package.
+         * Only package name, channel count, logos and streams change.
+         */
         val outer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(4, 4, 4, 8)
+            setPadding(8, 8, 8, 12)
         }
 
-        val top = LinearLayout(this).apply {
+        val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(8, 0, 8, 8)
+        }
+
+        val headerInfo = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        top.addView(
+        headerInfo.addView(
             tv(
                 selectedPackage.name,
-                24f,
+                25f,
                 text,
                 true,
-                Gravity.CENTER_VERTICAL or Gravity.START
+                Gravity.START or Gravity.CENTER_VERTICAL
             ),
-            LinearLayout.LayoutParams(
-                0,
-                66,
-                1f
-            )
+            LinearLayout.LayoutParams(-1, 38)
         )
 
-        top.addView(
+        headerInfo.addView(
+            tv(
+                "${selectedPackage.channels.size} قناة • LIVE",
+                14f,
+                muted,
+                false,
+                Gravity.START or Gravity.CENTER_VERTICAL
+            ),
+            LinearLayout.LayoutParams(-1, 28)
+        )
+
+        header.addView(
+            headerInfo,
+            LinearLayout.LayoutParams(0, 66, 1f)
+        )
+
+        header.addView(
             Button(this).apply {
                 text = "الباقات"
                 textSize = 15f
@@ -478,189 +499,189 @@ class ChannelsActivity : AppCompatActivity() {
                 stateListAnimator = null
                 isFocusable = true
 
+                setOnFocusChangeListener { v, hasFocus ->
+                    v.background =
+                        if (hasFocus) solid(gold, 12f)
+                        else solid(panel2, 12f)
+
+                    (v as Button).setTextColor(
+                        if (hasFocus) 0xFF160B20.toInt()
+                        else this@ChannelsActivity.text
+                    )
+                }
+
                 setOnClickListener {
                     packageChannelsMode = false
                     showLive()
                 }
             },
-            LinearLayout.LayoutParams(120, 52)
+            LinearLayout.LayoutParams(125, 52)
         )
 
         outer.addView(
-            top,
-            LinearLayout.LayoutParams(-1, 74)
+            header,
+            LinearLayout.LayoutParams(-1, 76)
         )
 
-        val frame = LinearLayout(this).apply {
+        val body = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.FILL
             setPadding(4, 4, 4, 4)
         }
 
-        val left = LinearLayout(this).apply {
+        /*
+         * LEFT: universal channel list
+         */
+        val listPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = bgDrawable(
                 0xFF24113D.toInt(),
                 0xFF100A1C.toInt(),
-                10f
+                14f
             )
             setPadding(14, 12, 14, 12)
         }
 
-        left.addView(
+        listPanel.addView(
             tv(
-                "قنوات " + selectedPackage.name,
+                "قنوات ${selectedPackage.name}",
                 20f,
                 text,
                 true,
-                Gravity.START
+                Gravity.START or Gravity.CENTER_VERTICAL
             ),
             LinearLayout.LayoutParams(-1, 42)
         )
 
-        left.addView(
+        listPanel.addView(
             tv(
-                "اختار قناة ثم اضغط OK",
+                "▲▼ للتنقل • OK للمشاهدة",
                 13f,
                 muted,
                 false,
-                Gravity.START
+                Gravity.START or Gravity.CENTER_VERTICAL
             ),
-            LinearLayout.LayoutParams(-1, 28)
+            LinearLayout.LayoutParams(-1, 30)
         )
 
         val list = RecyclerView(this).apply {
-            layoutManager =
-                LinearLayoutManager(this@ChannelsActivity)
-
+            layoutManager = LinearLayoutManager(this@ChannelsActivity)
             isFocusable = true
-            descendantFocusability =
-                ViewGroup.FOCUS_AFTER_DESCENDANTS
-
+            descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
             clipToPadding = false
-            setPadding(0, 8, 0, 10)
+            overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+            setPadding(0, 8, 0, 8)
         }
 
-        left.addView(
+        listPanel.addView(
             list,
-            LinearLayout.LayoutParams(
-                -1,
-                0,
-                1f
-            )
+            LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
-        frame.addView(
-            left,
-            LinearLayout.LayoutParams(
-                0,
-                -1,
-                0.42f
-            ).apply {
-                setMargins(0, 0, 12, 0)
+        body.addView(
+            listPanel,
+            LinearLayout.LayoutParams(0, -1, 0.46f).apply {
+                setMargins(0, 0, 10, 0)
             }
         )
 
-        val info = LinearLayout(this).apply {
+        /*
+         * RIGHT: universal selected-channel information
+         */
+        val infoPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-
             background = bgDrawable(
                 0xFF15101F.toInt(),
                 0xFF0A0810.toInt(),
-                10f
+                14f
             )
-
-            setPadding(30, 24, 30, 24)
+            setPadding(24, 20, 24, 20)
         }
 
-        channelInfoLogo =
-            ImageView(this).apply {
-                scaleType =
-                    ImageView.ScaleType.CENTER_INSIDE
-            }
+        channelInfoLogo = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            adjustViewBounds = true
+        }
 
-        info.addView(
+        infoPanel.addView(
             channelInfoLogo,
-            LinearLayout.LayoutParams(-1, 210)
+            LinearLayout.LayoutParams(-1, 230)
         )
 
-        channelInfoName =
-            tv("", 30f, text, true)
+        channelInfoName = tv(
+            "",
+            28f,
+            text,
+            true,
+            Gravity.CENTER
+        )
 
-        info.addView(
+        infoPanel.addView(
             channelInfoName,
-            LinearLayout.LayoutParams(-1, 54)
+            LinearLayout.LayoutParams(-1, 58)
         )
 
-        info.addView(
+        infoPanel.addView(
             tv(
                 "● LIVE",
                 18f,
                 0xFF69E28C.toInt(),
-                true
+                true,
+                Gravity.CENTER
             ),
             LinearLayout.LayoutParams(-1, 42)
         )
 
-        info.addView(
+        infoPanel.addView(
             tv(
                 "OK : مشاهدة القناة",
                 15f,
-                muted
+                muted,
+                false,
+                Gravity.CENTER
             ),
-            LinearLayout.LayoutParams(-1, 40)
+            LinearLayout.LayoutParams(-1, 42)
         )
 
-        frame.addView(
-            info,
-            LinearLayout.LayoutParams(
-                0,
-                -1,
-                0.58f
-            )
+        body.addView(
+            infoPanel,
+            LinearLayout.LayoutParams(0, -1, 0.54f)
         )
 
         outer.addView(
-            frame,
-            LinearLayout.LayoutParams(
-                -1,
-                0,
-                1f
-            )
+            body,
+            LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
         content.addView(outer)
 
-        val packageChannels = selectedPackage.channels
-
-        val visible =
-            packageChannels
-                .mapIndexed { index, pc ->
-                    Api.Channel(
-                        id = ("package_" + selectedPackage.id + "_" + pc.id).hashCode().toLong(),
-                        name = pc.name,
-                        logoUrl = pc.logoUrl,
-                        sortOrder = pc.sortOrder,
-                        streamUrl = pc.streamUrl
-                    )
+        val visible = selectedPackage.channels
+            .map { pc ->
+                Api.Channel(
+                    id = ("package_" + selectedPackage.id + "_" + pc.id)
+                        .hashCode()
+                        .toLong(),
+                    name = pc.name,
+                    logoUrl = pc.logoUrl,
+                    sortOrder = pc.sortOrder,
+                    streamUrl = pc.streamUrl
+                )
+            }
+            .sortedWith(
+                compareBy<Api.Channel> {
+                    Regex("(?i)HichrawiSport(\\d+)")
+                        .find(it.name.replace(" ", ""))
+                        ?.groupValues
+                        ?.getOrNull(1)
+                        ?.toIntOrNull()
+                        ?: it.sortOrder
                 }
-                .sortedWith(
-                    compareBy<Api.Channel> {
-                        Regex("(?i)HichrawiSport(\\d+)")
-                            .find(
-                                it.name.replace(" ", "")
-                            )
-                            ?.groupValues
-                            ?.getOrNull(1)
-                            ?.toIntOrNull()
-                            ?: it.sortOrder
-                    }
                     .thenBy { it.sortOrder }
                     .thenBy { it.id }
-                )
+            )
 
-        list.adapter =
-            LiveAdapter(visible)
+        list.adapter = LiveAdapter(visible)
 
         if (visible.isNotEmpty()) {
             updateChannelInfo(visible.first())
@@ -669,8 +690,7 @@ class ChannelsActivity : AppCompatActivity() {
                 list.getChildAt(0)?.requestFocus()
             }
         } else {
-            channelInfoName?.text =
-                "لا توجد قنوات"
+            channelInfoName?.text = "لا توجد قنوات في هذه الباقة"
         }
     }
 
