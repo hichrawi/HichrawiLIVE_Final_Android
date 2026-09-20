@@ -813,10 +813,7 @@ class ChannelsActivity : AppCompatActivity() {
 
             fun normalBackground() =
                 solid(
-                    if (items[position].id == currentChannelId)
-                        0xFF6A4C93.toInt()
-                    else
-                        0xFF2B2140.toInt(),
+                    0xFF2B2140.toInt(),
                     8f
                 )
 
