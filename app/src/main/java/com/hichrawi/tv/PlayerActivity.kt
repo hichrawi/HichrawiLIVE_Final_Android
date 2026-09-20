@@ -481,14 +481,26 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
         videoSurface.requestFocus()
     }
 
+    /**
+     * Universal package channel menu.
+     *
+     * The exact same menu is used for every package:
+     * Hichrawi Sport, Sport World, or any future package.
+     * Nothing here depends on the package name.
+     */
     private fun buildPackageOverlay(): View {
+        val packageName = intent.getStringExtra("package_name")
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?: "LIVE"
+
         val panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setBackgroundColor(0xE6111118.toInt())
-            setPadding(18, 18, 18, 18)
+            setBackgroundColor(0xF20B0912.toInt())
+            setPadding(20, 18, 20, 18)
             isFocusable = true
-            elevation = 18f
+            elevation = 20f
         }
 
         val header = LinearLayout(this).apply {
@@ -496,49 +508,81 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        header.addView(TextView(this).apply {
-            text = "القنوات الرياضية (${packageChannels.size})"
-            textSize = 21f
-            setTextColor(0xFFFFFFFF.toInt())
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        val titleBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
-        }, LinearLayout.LayoutParams(0, 56, 1f))
+        }
+
+        titleBox.addView(TextView(this).apply {
+            text = packageName
+            textSize = 22f
+            setTextColor(Color.WHITE)
+            setTypeface(typeface, Typeface.BOLD)
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        }, LinearLayout.LayoutParams(-1, 34))
+
+        titleBox.addView(TextView(this).apply {
+            text = "قنوات الباقة • ${packageChannels.size}"
+            textSize = 13f
+            setTextColor(0xFFC4B8D6.toInt())
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+        }, LinearLayout.LayoutParams(-1, 26))
+
+        header.addView(
+            titleBox,
+            LinearLayout.LayoutParams(0, 62, 1f)
+        )
 
         header.addView(TextView(this).apply {
             text = "OK"
-            textSize = 14f
-            setTextColor(0xFFFFFFFF.toInt())
+            textSize = 15f
+            setTextColor(0xFF160B20.toInt())
+            setTypeface(typeface, Typeface.BOLD)
             gravity = Gravity.CENTER
-            setBackgroundColor(0xFF6A4C93.toInt())
-            setPadding(20, 0, 20, 0)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(0xFFFFC400.toInt())
+                cornerRadius = 12f
+            }
             isFocusable = false
-        }, LinearLayout.LayoutParams(72, 44))
+        }, LinearLayout.LayoutParams(70, 44))
 
-        panel.addView(header)
+        panel.addView(
+            header,
+            LinearLayout.LayoutParams(-1, 66)
+        )
 
         val list = RecyclerView(this).apply {
             id = View.generateViewId()
             clipToPadding = false
-            setPadding(4, 8, 4, 12)
+            setPadding(4, 10, 4, 12)
             overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
             isFocusable = true
+            descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
             layoutManager = LinearLayoutManager(this@PlayerActivity)
             adapter = PackageChannelAdapter(packageChannels)
         }
+
         packageListView = list
-        panel.addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        panel.addView(
+            list,
+            LinearLayout.LayoutParams(-1, 0, 1f)
+        )
 
         panel.addView(TextView(this).apply {
-            text = "OK: اختيار   •   ▲▼: تنقل   •   BACK: إخفاء"
+            text = "OK : مشاهدة   •   ▲▼ : تنقل   •   BACK : إخفاء"
             textSize = 13f
-            setTextColor(0xFFB8C0CC.toInt())
+            setTextColor(0xFFC4B8D6.toInt())
             gravity = Gravity.CENTER
-        }, LinearLayout.LayoutParams(-1, 36))
+        }, LinearLayout.LayoutParams(-1, 38))
 
         val lp = FrameLayout.LayoutParams(560, -1).apply {
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
             setMargins(18, 18, 0, 18)
         }
+
         root.addView(panel, lp)
         return panel
     }
@@ -549,56 +593,117 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
 
         inner class Holder(val row: LinearLayout) : RecyclerView.ViewHolder(row)
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
+        override fun onCreateViewHolder(
+            parent: ViewGroup,
+            viewType: Int
+        ): Holder {
+
             val row = LinearLayout(this@PlayerActivity).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(12, 5, 12, 5)
+                setPadding(12, 7, 12, 7)
+
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(0xB5221A31.toInt())
+                    cornerRadius = 10f
+                }
+
                 isFocusable = true
                 isClickable = true
-                setBackgroundColor(0xB322222B.toInt())
-                elevation = 2f
+                stateListAnimator = null
+                minimumHeight = 60
             }
+
             return Holder(row)
         }
 
-        override fun onBindViewHolder(holder: Holder, position: Int) {
+        override fun onBindViewHolder(
+            holder: Holder,
+            position: Int
+        ) {
             val channel = items[position]
             val row = holder.row
+
             row.removeAllViews()
 
-            row.addView(TextView(this@PlayerActivity).apply {
+            val number = TextView(this@PlayerActivity).apply {
                 text = "${position + 1}"
                 textSize = 17f
-                setTextColor(0xFFB8C0CC.toInt())
+                setTextColor(0xFFFFC400.toInt())
+                setTypeface(typeface, Typeface.BOLD)
                 gravity = Gravity.CENTER
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
-            }, LinearLayout.LayoutParams(48, -1))
+            }
+
+            row.addView(
+                number,
+                LinearLayout.LayoutParams(42, 56)
+            )
 
             val image = ImageView(this@PlayerActivity).apply {
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
                 contentDescription = channel.name
             }
-            row.addView(image, LinearLayout.LayoutParams(58, 54))
 
-            row.addView(TextView(this@PlayerActivity).apply {
+            row.addView(
+                image,
+                LinearLayout.LayoutParams(58, 56).apply {
+                    setMargins(4, 0, 8, 0)
+                }
+            )
+
+            val name = TextView(this@PlayerActivity).apply {
                 text = channel.name
-                textSize = 16f
-                setTextColor(0xFFFFFFFF.toInt())
-                gravity = Gravity.CENTER_VERTICAL
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                textSize = 17f
+                setTextColor(Color.WHITE)
+                setTypeface(typeface, Typeface.BOLD)
+                gravity = Gravity.CENTER_VERTICAL or Gravity.START
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
-            }, LinearLayout.LayoutParams(0, -1, 1f))
-
-            if (channel.id == currentChannelId) {
-                row.setBackgroundColor(0xFF6A4C93.toInt())
             }
 
-            row.setOnClickListener { switchChannel(channel) }
+            row.addView(
+                name,
+                LinearLayout.LayoutParams(0, 56, 1f)
+            )
+
+            row.addView(TextView(this@PlayerActivity).apply {
+                text = "●"
+                textSize = 12f
+                setTextColor(0xFF65D99A.toInt())
+                gravity = Gravity.CENTER
+            }, LinearLayout.LayoutParams(30, 56))
+
+            fun normalBackground() =
+                android.graphics.drawable.GradientDrawable().apply {
+                    setColor(
+                        if (channel.id == currentChannelId)
+                            0xFF6A4C93.toInt()
+                        else
+                            0xB5221A31.toInt()
+                    )
+                    cornerRadius = 10f
+                }
+
+            fun focusedBackground() =
+                android.graphics.drawable.GradientDrawable().apply {
+                    setColor(0xFF8B2FD0.toInt())
+                    setStroke(2, 0xFFFFC400.toInt())
+                    cornerRadius = 10f
+                }
+
+            row.background = normalBackground()
+
+            row.setOnClickListener {
+                switchChannel(channel)
+            }
+
             row.setOnKeyListener { _, keyCode, keyEvent ->
-                if (keyEvent.action == KeyEvent.ACTION_DOWN &&
-                    (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)
+                if (
+                    keyEvent.action == KeyEvent.ACTION_DOWN &&
+                    (
+                        keyCode == KeyEvent.KEYCODE_DPAD_CENTER ||
+                        keyCode == KeyEvent.KEYCODE_ENTER
+                    )
                 ) {
                     switchChannel(channel)
                     true
@@ -606,25 +711,23 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
                     false
                 }
             }
+
             row.setOnFocusChangeListener { view, hasFocus ->
                 if (hasFocus) {
                     view.scaleX = 1.015f
                     view.scaleY = 1.015f
                     view.elevation = 12f
-                    view.setBackgroundColor(0xFF8B2FD0.toInt())
+                    view.background = focusedBackground()
                 } else {
                     view.scaleX = 1f
                     view.scaleY = 1f
                     view.elevation = 2f
-                    if (channel.id == currentChannelId) {
-                        view.setBackgroundColor(0xFF6A4C93.toInt())
-                    } else {
-                        view.setBackgroundColor(0xB322222B.toInt())
-                    }
+                    view.background = normalBackground()
                 }
             }
 
             val fixed = sportLogoFor(channel.name)
+
             if (fixed != 0) {
                 image.setImageResource(fixed)
             } else if (!channel.logoUrl.isNullOrBlank()) {
@@ -633,19 +736,6 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
         }
 
         override fun getItemCount(): Int = items.size
-    }
-
-    private fun switchChannel(channel: Api.Channel) {
-        currentChannelId = channel.id
-        currentChannelName = channel.name
-
-        intent.putExtra("direct_url", channel.streamUrl)
-
-        setChannelLogo(channel.name, channel.logoUrl)
-        message.text = channel.name
-        reportPresence()
-        hidePackageOverlay()
-        startPlayback(channel.id)
     }
 
     private fun loadSmallImage(url: String, image: ImageView) {
