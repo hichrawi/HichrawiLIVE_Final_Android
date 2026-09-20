@@ -169,8 +169,9 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
         try {
             val options = arrayListOf(
                 "--audio-time-stretch",
-                "--network-caching=1500",
-                "--http-reconnect"
+                "--network-caching=6000",
+                "--http-reconnect",
+                "--avcodec-skiploopfilter=1"
             )
 
             libVlc = LibVLC(this, options).also {
@@ -194,15 +195,8 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
                             MediaPlayer.Event.EncounteredError -> {
                                 runOnUiThread {
                                     if (currentStreamUrl == url) {
-                                        message.text = "إعادة الاتصال بالبث..."
-                                        message.visibility = View.VISIBLE
-
-                                        mainHandler.removeCallbacksAndMessages(null)
-                                        mainHandler.postDelayed({
-                                            if (currentStreamUrl == url && !isFinishing && !isDestroyed) {
-                                                prepareVlc(url)
-                                            }
-                                        }, 2000)
+                                        showPlaybackError("تعذر تشغيل البث — جاري إيقاف المشغل بأمان")
+                                        releaseVlc()
                                     } else {
                                         showPlaybackError("تعذر تشغيل البث")
                                     }
@@ -220,8 +214,9 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
             vlcPlayer = vlc
 
             val media = Media(libVlc, Uri.parse(url)).also {
-                it.setHWDecoderEnabled(true, false)
-                it.addOption(":network-caching=1500")
+                // Stable software decoding path for X96Q ARMv7.
+                it.setHWDecoderEnabled(false, false)
+                it.addOption(":network-caching=6000")
                 it.addOption(":http-reconnect=true")
             }
             currentMedia = media
