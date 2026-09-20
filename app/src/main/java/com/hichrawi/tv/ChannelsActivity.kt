@@ -707,39 +707,178 @@ class ChannelsActivity : AppCompatActivity() {
             }.thenBy { it.sortOrder }.thenBy { it.id }
         )
 
-    private inner class LiveAdapter(private val items: List<Api.Channel>) : RecyclerView.Adapter<LiveAdapter.Holder>() {
-        inner class Holder(val row: LinearLayout) : RecyclerView.ViewHolder(row)
+    private inner class LiveAdapter(
+        private val items: List<Api.Channel>
+    ) : RecyclerView.Adapter<LiveAdapter.Holder>() {
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
+        inner class Holder(val row: LinearLayout) :
+            RecyclerView.ViewHolder(row)
+
+        override fun onCreateViewHolder(
+            parent: ViewGroup,
+            viewType: Int
+        ): Holder {
+
             val row = LinearLayout(this@ChannelsActivity).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                background = solid(0xFF2B2140.toInt(), 8f)
+
+                layoutParams = RecyclerView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    64
+                )
+
+                minimumHeight = 64
+                setPadding(12, 6, 12, 6)
+
+                background = solid(
+                    0xFF2B2140.toInt(),
+                    8f
+                )
+
                 isFocusable = true
                 isClickable = true
-                setPadding(12, 6, 12, 6)
                 stateListAnimator = null
             }
+
             return Holder(row)
         }
 
-        override fun onBindViewHolder(holder: Holder, position: Int) {
+        override fun onBindViewHolder(
+            holder: Holder,
+            position: Int
+        ) {
             val ch = items[position]
             val row = holder.row
+
             row.removeAllViews()
-            row.addView(tv("${position + 1}", 16f, gold, true), LinearLayout.LayoutParams(42, 48))
-            row.addView(tv(ch.name, 18f, text, false, Gravity.CENTER_VERTICAL or Gravity.START), LinearLayout.LayoutParams(0, 48, 1f))
-            row.addView(tv("●", 13f, 0xFF65D99A.toInt(), true), LinearLayout.LayoutParams(28, 48))
-            row.setOnFocusChangeListener { v, hasFocus ->
-                v.background = if (hasFocus) bgDrawable(0xFF8B2FD0.toInt(), 0xFF5A1E9A.toInt(), 8f, gold) else solid(0xFF2B2140.toInt(), 8f)
-                v.scaleX = if (hasFocus) 1.015f else 1f
-                v.scaleY = if (hasFocus) 1.015f else 1f
-                if (hasFocus) updateChannelInfo(ch)
+
+            val number = tv(
+                "${position + 1}",
+                17f,
+                gold,
+                true,
+                Gravity.CENTER
+            )
+
+            row.addView(
+                number,
+                LinearLayout.LayoutParams(48, 52)
+            )
+
+            val logo = ImageView(this@ChannelsActivity).apply {
+                scaleType = ImageView.ScaleType.CENTER_INSIDE
+                contentDescription = ch.name
             }
-            row.setOnClickListener { play(ch) }
+
+            row.addView(
+                logo,
+                LinearLayout.LayoutParams(58, 52).apply {
+                    setMargins(4, 0, 8, 0)
+                }
+            )
+
+            val name = tv(
+                ch.name,
+                17f,
+                text,
+                true,
+                Gravity.CENTER_VERTICAL or Gravity.START
+            ).apply {
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            }
+
+            row.addView(
+                name,
+                LinearLayout.LayoutParams(
+                    0,
+                    52,
+                    1f
+                )
+            )
+
+            val live = tv(
+                "●",
+                14f,
+                0xFF65D99A.toInt(),
+                true,
+                Gravity.CENTER
+            )
+
+            row.addView(
+                live,
+                LinearLayout.LayoutParams(36, 52)
+            )
+
+            fun normalBackground() =
+                solid(
+                    if (items[position].id == currentChannelId)
+                        0xFF6A4C93.toInt()
+                    else
+                        0xFF2B2140.toInt(),
+                    8f
+                )
+
+            fun focusedBackground() =
+                bgDrawable(
+                    0xFF8B2FD0.toInt(),
+                    0xFF5A1E9A.toInt(),
+                    8f,
+                    gold
+                )
+
+            row.background = normalBackground()
+
+            row.setOnFocusChangeListener { v, hasFocus ->
+                /*
+                 * Important:
+                 * Do NOT scale the row.
+                 * Scaling was causing rows to overlap on some TV devices.
+                 */
+                v.scaleX = 1f
+                v.scaleY = 1f
+                v.elevation = if (hasFocus) 8f else 2f
+
+                v.background =
+                    if (hasFocus)
+                        focusedBackground()
+                    else
+                        normalBackground()
+
+                if (hasFocus) {
+                    updateChannelInfo(ch)
+                }
+            }
+
+            row.setOnClickListener {
+                play(ch)
+            }
+
+            row.setOnKeyListener { _, keyCode, event ->
+                if (
+                    event.action == android.view.KeyEvent.ACTION_DOWN &&
+                    (
+                        keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER ||
+                        keyCode == android.view.KeyEvent.KEYCODE_ENTER
+                    )
+                ) {
+                    play(ch)
+                    true
+                } else {
+                    false
+                }
+            }
+
+            ch.logoUrl
+                ?.takeIf { it.isNotBlank() }
+                ?.let { url ->
+                    loadImage(url, logo)
+                }
         }
 
-        override fun getItemCount() = items.size
+        override fun getItemCount(): Int =
+            items.size
     }
 
     private fun updateChannelInfo(ch: Api.Channel) {
