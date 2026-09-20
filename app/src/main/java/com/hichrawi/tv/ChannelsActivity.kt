@@ -157,7 +157,7 @@ class ChannelsActivity : AppCompatActivity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        val liveCount = sportsOnly().size
+        val liveCount = allPackages.sumOf { it.channels.size }
         val liveDetail = if (liveCount > 0) "$liveCount قنوات رياضية" else "جاري تحميل القنوات"
         val live = homeCard("▶", "LIVE", liveDetail, purple2, 0xFF25104C.toInt()) { showLive() }
         val social = homeCard("◎", "SOCIAL", "روابط التواصل", 0xFF1767A8.toInt(), 0xFF10243F.toInt()) { showSocial() }

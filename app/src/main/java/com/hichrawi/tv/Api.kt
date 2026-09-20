@@ -6,6 +6,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.SetOptions
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
@@ -392,6 +393,34 @@ object Api {
         )
 
         return result
+    }
+
+    /** Updates invisible live presence for the admin panel. */
+    fun updatePresence(
+        context: Context,
+        deviceKey: String,
+        channelId: Long,
+        channelName: String,
+        packageName: String
+    ) {
+        ensureAnonymousAuth(context)
+
+        val uid = auth(context).currentUser?.uid ?: return
+
+        db(context)
+            .collection("devices")
+            .document(deviceKey)
+            .set(
+                mapOf(
+                    "deviceKey" to deviceKey,
+                    "authUid" to uid,
+                    "channelId" to channelId,
+                    "channelName" to channelName,
+                    "packageName" to packageName,
+                    "lastSeen" to FieldValue.serverTimestamp()
+                ),
+                SetOptions.merge()
+            )
     }
 
     /** Public app settings stored in Firestore settings/app. */

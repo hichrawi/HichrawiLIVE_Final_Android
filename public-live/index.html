@@ -91,6 +91,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 <button data-tab="subscriptions">🎟️ الاشتراكات</button>
 <button data-tab="devices">📱 الأجهزة</button>
 <button data-tab="channels">📺 القنوات</button>
+<button data-tab="packages">📦 الباقات</button>
 <button data-tab="settings">⚙️ إعدادات التطبيق</button>
 </div>
 
@@ -106,14 +107,40 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 <p>هذه لوحة الإدارة الخاصة بتطبيق HICHRAWI LIVE فقط.</p>
 <p class="ok">✓ مستقلة عن إدارة HICHRAWI-TV والبث القديم.</p>
 </div>
+
+<div class="panel" style="margin-top:18px;text-align:center;">
+<h2>📥 تحميل HICHRAWI LIVE</h2>
+<p>النسخة النهائية الرسمية — الإصدار 2.5.0</p>
+
+<a href="https://github.com/hichrawi/HichrawiLIVE_Final_Android/releases/download/v2.5.0/hichrawi-live.apk"
+   target="_blank"
+   style="display:inline-block;background:#18a866;color:#fff;text-decoration:none;padding:14px 24px;border-radius:10px;font-weight:bold;margin:8px;">
+   📥 تحميل APK مباشرة
+</a>
+
+<div style="margin-top:18px;padding:15px;background:#101010;border:1px solid #333;border-radius:10px;">
+<strong>📺 Downloader</strong>
+<p style="color:#aaa;">استعمل رابط APK التالي داخل تطبيق Downloader:</p>
+<div class="code" style="font-size:14px;word-break:break-all;">
+https://github.com/hichrawi/HichrawiLIVE_Final_Android/releases/download/v2.5.0/hichrawi-live.apk
+</div>
+</div>
+</div>
 </section>
 
+<div class="panel" style="margin-bottom:18px">
+<h2>📱 تحميل HICHRAWI LIVE</h2>
+<p>النسخة النهائية الرسمية — Android و Android TV و X96Q</p>
+<a href="https://api.codemagic.io/artifacts/f86c9a90-f213-4079-bc6f-e4680815868f/77a383a9-142a-42d8-8dd7-43abe46f58bd/app-release.apk" target="_blank" rel="noopener" class="gold" style="display:inline-block;text-decoration:none">⬇️ تحميل آخر نسخة نهائية</a>
+</div>
 <section id="subscriptions" class="section">
 <div class="grid">
 <div class="panel">
 <h2>🎟️ إنشاء كود اشتراك</h2>
 <label>مدة الاشتراك بالأيام</label>
 <select id="duration">
+<option value="1">يوم واحد</option>
+<option value="3">3 أيام</option>
 <option value="7">7 أيام</option>
 <option value="30" selected>30 يوم</option>
 <option value="90">90 يوم</option>
@@ -150,7 +177,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 <section id="devices" class="section">
 <div class="panel">
 <h2>📱 الأجهزة المفعلة</h2>
-<div style="overflow:auto"><table><thead><tr><th>الجهاز</th><th>الكود</th><th>UID</th><th>التفعيل</th><th>الانتهاء</th><th>الإدارة</th></tr></thead>
+<div style="overflow:auto"><table><thead><tr><th>الجهاز</th><th>الكود</th><th>UID</th><th>الحالة</th><th>الباقة</th><th>القناة الحالية</th><th>آخر ظهور</th><th>التفعيل</th><th>الانتهاء</th><th>الإدارة</th></tr></thead>
 <tbody id="devicesTable"></tbody></table></div>
 </div>
 </section>
@@ -170,6 +197,72 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 <div style="overflow:auto"><table><thead><tr><th>القناة</th><th>الرابط</th><th>الإدارة</th></tr></thead>
 <tbody id="channelsTable"></tbody></table></div>
 </div>
+</div>
+</section>
+
+
+<section id="packages" class="section">
+<div class="grid">
+
+<div class="panel">
+<h2>📦 إضافة / تعديل باقة</h2>
+
+<input type="hidden" id="packageDocId">
+
+<label>اسم الباقة</label>
+<input id="packageName" placeholder="مثال: Hichrawi Sport">
+
+<label>رابط شعار الباقة</label>
+<input id="packageLogo" dir="ltr" placeholder="https://.../logo.png">
+
+<label>قنوات الباقة</label>
+
+<div id="packageChannels"
+     style="max-height:360px;overflow:auto;border:1px solid #333;border-radius:10px;padding:10px;margin:10px 0;">
+  لا توجد قنوات مضافة بعد
+</div>
+
+<div style="border-top:1px solid #333;margin-top:14px;padding-top:14px;">
+  <h3 style="margin:0 0 10px;">➕ إضافة قناة للباقة</h3>
+
+  <input type="hidden" id="packageChannelEditId">
+
+  <label>اسم القناة</label>
+  <input id="packageChannelName" placeholder="مثال: Hichrawi Sport 21">
+
+  <label>رابط البث Stream URL</label>
+  <input id="packageChannelStream" dir="ltr"
+         placeholder="https://example.com/stream.m3u8">
+
+  <label>رابط شعار القناة</label>
+  <input id="packageChannelLogo" dir="ltr"
+         placeholder="https://example.com/logo.png">
+
+  <label>ترتيب القناة</label>
+  <input id="packageChannelOrder" type="number" value="1" min="1">
+
+  <button class="green" id="addPackageChannel" type="button">
+    ➕ إضافة القناة
+  </button>
+
+  <button class="gray" id="cancelPackageChannelEdit" type="button" style="display:none;">
+    إلغاء التعديل
+  </button>
+</div>
+
+<button class="green" id="savePackage">💾 حفظ الباقة</button>
+<button class="gray" id="clearPackage">🧹 مسح</button>
+
+<div id="packageMsg" class="msg"></div>
+</div>
+
+<div class="panel">
+<h2>📦 الباقات الموجودة</h2>
+<div id="packagesList">
+جاري تحميل الباقات...
+</div>
+</div>
+
 </div>
 </section>
 

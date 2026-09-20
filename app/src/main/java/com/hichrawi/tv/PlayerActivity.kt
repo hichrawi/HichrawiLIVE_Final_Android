@@ -46,6 +46,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
     private var currentMedia: Media? = null
     private var guardJob: Job? = null
     private var packageJob: Job? = null
+    private var presenceJob: Job? = null
 
     private var currentChannelId = 0L
     private var currentChannelName = ""
@@ -76,6 +77,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
         setChannelLogo(currentChannelName, intent.getStringExtra("logo_url"))
         configureDeviceControls()
         startPlayback(currentChannelId)
+        loadCurrentPackageChannels(showOverlay = false)
     }
 
     private fun configureDeviceControls() {
@@ -223,6 +225,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
             vlc.setMedia(media)
             vlc.play()
             startLicenseGuard()
+            startPresenceGuard()
         } catch (e: Exception) {
             releaseVlc()
             showPlaybackError(e.message ?: "خطأ في إنشاء مشغل البث")
@@ -241,6 +244,43 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
         val isTv = packageManager.hasSystemFeature("android.software.leanback")
         findViewById<View>(R.id.playerBack)?.visibility = if (isTv) View.GONE else View.VISIBLE
         findViewById<View>(R.id.playerExit)?.visibility = if (isTv) View.GONE else View.VISIBLE
+    }
+
+    private fun reportPresence() {
+        val deviceKey = AppConfig.deviceKey(this)
+        val packageName = intent.getStringExtra("package_name")
+            ?.trim()
+            .orEmpty()
+
+        val channelId = currentChannelId
+        val channelName = currentChannelName
+
+        if (deviceKey.isBlank() || channelName.isBlank()) return
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                Api.updatePresence(
+                    this@PlayerActivity,
+                    deviceKey,
+                    channelId,
+                    channelName,
+                    packageName
+                )
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun startPresenceGuard() {
+        presenceJob?.cancel()
+        reportPresence()
+
+        presenceJob = lifecycleScope.launch {
+            while (true) {
+                delay(30_000)
+                reportPresence()
+            }
+        }
     }
 
     private fun startLicenseGuard() {
@@ -271,6 +311,22 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
             when (event.keyCode) {
+                KeyEvent.KEYCODE_DPAD_UP,
+                KeyEvent.KEYCODE_CHANNEL_UP -> {
+                    if (packageOverlay?.visibility != View.VISIBLE && event.repeatCount == 0) {
+                        switchAdjacentChannel(1)
+                        return true
+                    }
+                }
+
+                KeyEvent.KEYCODE_DPAD_DOWN,
+                KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+                    if (packageOverlay?.visibility != View.VISIBLE && event.repeatCount == 0) {
+                        switchAdjacentChannel(-1)
+                        return true
+                    }
+                }
+
                 KeyEvent.KEYCODE_DPAD_CENTER,
                 KeyEvent.KEYCODE_ENTER -> {
                     if (packageOverlay?.visibility == View.VISIBLE) {
@@ -304,7 +360,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
         }
     }
 
-    private fun loadCurrentPackageChannels() {
+    private fun loadCurrentPackageChannels(showOverlay: Boolean = true) {
         val deviceId = prefs.getLong(
             "firebase_device_id",
             prefs.getLong("server_device_id", 0L)
@@ -363,12 +419,14 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
 
                 withContext(Dispatchers.Main) {
                     if (packageChannels.isEmpty()) {
-                        Toast.makeText(
-                            this@PlayerActivity,
-                            "لا توجد قنوات مفعلة",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
+                        if (showOverlay) {
+                            Toast.makeText(
+                                this@PlayerActivity,
+                                "لا توجد قنوات مفعلة",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else if (showOverlay) {
                         showPackageOverlay()
                     }
                 }
@@ -382,6 +440,26 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
                 }
             }
         }
+    }
+
+    private fun switchAdjacentChannel(direction: Int) {
+        if (packageChannels.isEmpty()) {
+            loadCurrentPackageChannels(showOverlay = false)
+            return
+        }
+
+        if (packageChannels.size <= 1) return
+
+        val currentIndex = packageChannels.indexOfFirst {
+            it.id == currentChannelId
+        }
+
+        val startIndex = if (currentIndex >= 0) currentIndex else 0
+
+        val nextIndex =
+            (startIndex + direction + packageChannels.size) % packageChannels.size
+
+        switchChannel(packageChannels[nextIndex])
     }
 
     private fun showPackageOverlay() {
@@ -565,6 +643,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
 
         setChannelLogo(channel.name, channel.logoUrl)
         message.text = channel.name
+        reportPresence()
         hidePackageOverlay()
         startPlayback(channel.id)
     }
@@ -651,6 +730,8 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
     override fun onStop() {
         packageJob?.cancel()
         packageJob = null
+        presenceJob?.cancel()
+        presenceJob = null
         releaseVlc()
         super.onStop()
     }
