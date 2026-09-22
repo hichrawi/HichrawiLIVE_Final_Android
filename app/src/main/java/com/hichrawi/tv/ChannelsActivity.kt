@@ -121,9 +121,15 @@ class ChannelsActivity : AppCompatActivity() {
         header.addView(logo, LinearLayout.LayoutParams(86, 56).apply { setMargins(14, 0, 12, 0) })
 
         val headText = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        title = tv("HICHRAWI LIVE", 25f, text, true, Gravity.START)
-        headText.addView(title, LinearLayout.LayoutParams(-1, 34))
-        headText.addView(tv("LIVE • SOCIAL • SETTINGS", 12f, muted, false, Gravity.START), LinearLayout.LayoutParams(-1, 22))
+        title = tv("HICHRAWI LIVE", 25f, text, true, Gravity.START).apply {
+            includeFontPadding = false
+            maxLines = 1
+        }
+        headText.addView(title, LinearLayout.LayoutParams(-1, 42))
+        headText.addView(tv("LIVE • SOCIAL • SETTINGS", 12f, muted, false, Gravity.START).apply {
+            includeFontPadding = false
+            maxLines = 1
+        }, LinearLayout.LayoutParams(-1, 22))
         header.addView(headText, LinearLayout.LayoutParams(0, 56, 1f))
 
         val clock = tv("", 18f, text, true, Gravity.END)
@@ -475,19 +481,20 @@ class ChannelsActivity : AppCompatActivity() {
 
         val packageTitle = tv(
             selectedPackage.name,
-            23f,
+            22f,
             text,
             true,
             Gravity.START or Gravity.CENTER_VERTICAL
         ).apply {
             includeFontPadding = false
             maxLines = 2
-            ellipsize = null
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setLineSpacing(0f, 1.0f)
         }
 
         headerInfo.addView(
             packageTitle,
-            LinearLayout.LayoutParams(-1, 50)
+            LinearLayout.LayoutParams(-1, 58)
         )
 
         headerInfo.addView(
@@ -505,7 +512,7 @@ class ChannelsActivity : AppCompatActivity() {
 
         header.addView(
             headerInfo,
-            LinearLayout.LayoutParams(0, 76, 1f)
+            LinearLayout.LayoutParams(0, 82, 1f)
         )
 
         header.addView(
@@ -539,7 +546,7 @@ class ChannelsActivity : AppCompatActivity() {
 
         outer.addView(
             header,
-            LinearLayout.LayoutParams(-1, 76)
+            LinearLayout.LayoutParams(-1, 82)
         )
 
         val body = LinearLayout(this).apply {
@@ -569,7 +576,7 @@ class ChannelsActivity : AppCompatActivity() {
                 true,
                 Gravity.START or Gravity.CENTER_VERTICAL
             ),
-            LinearLayout.LayoutParams(-1, 42)
+            LinearLayout.LayoutParams(-1, 48)
         )
 
         listPanel.addView(
@@ -630,15 +637,20 @@ class ChannelsActivity : AppCompatActivity() {
 
         channelInfoName = tv(
             "",
-            28f,
+            26f,
             text,
             true,
             Gravity.CENTER
-        )
+        ).apply {
+            includeFontPadding = false
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setLineSpacing(0f, 1.0f)
+        }
 
         infoPanel.addView(
             channelInfoName,
-            LinearLayout.LayoutParams(-1, 58)
+            LinearLayout.LayoutParams(-1, 76)
         )
 
         infoPanel.addView(
