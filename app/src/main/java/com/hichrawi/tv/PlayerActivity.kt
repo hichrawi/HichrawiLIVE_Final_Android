@@ -634,7 +634,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
                 isFocusable = true
                 isClickable = true
                 stateListAnimator = null
-                minimumHeight = 60
+                minimumHeight = 64
             }
 
             return Holder(row)
@@ -680,13 +680,14 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
                 setTextColor(Color.WHITE)
                 setTypeface(typeface, Typeface.BOLD)
                 gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                maxLines = 1
-                ellipsize = android.text.TextUtils.TruncateAt.END
+                includeFontPadding = false
+                maxLines = 2
+                ellipsize = null
             }
 
             row.addView(
                 name,
-                LinearLayout.LayoutParams(0, 56, 1f)
+                LinearLayout.LayoutParams(0, 60, 1f)
             )
 
             row.addView(TextView(this@PlayerActivity).apply {
