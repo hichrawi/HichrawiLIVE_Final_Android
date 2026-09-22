@@ -593,9 +593,17 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
             gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(-1, 38))
 
-        val lp = FrameLayout.LayoutParams(560, -1).apply {
+        val screenWidth = resources.displayMetrics.widthPixels
+        val screenHeight = resources.displayMetrics.heightPixels
+        val panelWidth = if (screenWidth > screenHeight) {
+            (screenWidth * 0.52f).toInt()
+        } else {
+            (screenWidth * 0.92f).toInt()
+        }
+
+        val lp = FrameLayout.LayoutParams(panelWidth, -1).apply {
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            setMargins(18, 18, 0, 18)
+            setMargins(18, 18, 18, 18)
         }
 
         root.addView(panel, lp)
