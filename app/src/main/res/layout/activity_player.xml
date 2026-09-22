@@ -67,7 +67,7 @@
 
     <TextView
         android:id="@+id/playerMessage"
-        android:layout_width="72%"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
         android:layout_marginStart="24dp"
