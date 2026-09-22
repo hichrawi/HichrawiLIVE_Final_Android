@@ -63,7 +63,215 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
   grid-template-columns:1fr;
  }
 }
+
+/* FINAL DEVICES TABLE LAYOUT */
+#devicesTable th:last-child,
+#devicesTable td:last-child {
+  width: 90px !important;
+  min-width: 90px !important;
+  max-width: 90px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+#devicesTable td:last-child button {
+  width: 72px !important;
+  min-width: 72px !important;
+  max-width: 72px !important;
+  height: 44px !important;
+  padding: 6px 8px !important;
+  margin: 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow: hidden !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  border-radius: 8px !important;
+}
+
+#devicesTable th:nth-child(3),
+#devicesTable td:nth-child(3) {
+  width: 11% !important;
+  font-size: 10px !important;
+  line-height: 1.15 !important;
+  word-break: break-all !important;
+}
+
+#devicesTable th:nth-child(4),
+#devicesTable td:nth-child(4) {
+  width: 11% !important;
+}
+
+#devicesTable th:nth-child(5),
+#devicesTable td:nth-child(5) {
+  width: 15% !important;
+}
+
+#devicesTable th:nth-child(6),
+#devicesTable td:nth-child(6) {
+  width: 27% !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+#devicesTable td {
+  padding: 12px 8px !important;
+}
+
 </style>
+
+<style id="devices-table-fix">
+#devicesTable {
+  width: 100%;
+  table-layout: fixed;
+}
+#devicesTable th:nth-child(1),
+#devicesTable td:nth-child(1) { width: 13%; }
+#devicesTable th:nth-child(2),
+#devicesTable td:nth-child(2) { width: 5%; font-size: 11px; }
+#devicesTable th:nth-child(3),
+#devicesTable td:nth-child(3) { width: 9%; font-size: 11px; word-break: break-all; }
+#devicesTable th:nth-child(4),
+#devicesTable td:nth-child(4) { width: 10%; }
+#devicesTable th:nth-child(5),
+#devicesTable td:nth-child(5) { width: 13%; }
+#devicesTable th:nth-child(6),
+#devicesTable td:nth-child(6) { width: 25%; font-weight: 700; }
+#devicesTable th:nth-child(7),
+#devicesTable td:nth-child(7) { width: 10%; }
+#devicesTable th:nth-child(8),
+#devicesTable td:nth-child(8) { width: 15%; }
+
+#devicesTable td {
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+#devicesTable .presence-online {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+#devicesTable .presence-offline {
+  font-size: 12px;
+}
+</style>
+
+
+<style id="devices-table-final-layout">
+#devicesTable {
+  width: 1250px !important;
+  min-width: 1250px !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+
+#devicesTable th,
+#devicesTable td {
+  padding: 14px 10px !important;
+  vertical-align: middle !important;
+  text-align: center !important;
+  line-height: 1.35 !important;
+}
+
+#devicesTable th:nth-child(1),
+#devicesTable td:nth-child(1) {
+  width: 190px !important;
+  word-break: break-word !important;
+}
+
+#devicesTable th:nth-child(2),
+#devicesTable td:nth-child(2) {
+  width: 100px !important;
+  font-size: 11px !important;
+  word-break: break-all !important;
+}
+
+#devicesTable th:nth-child(3),
+#devicesTable td:nth-child(3) {
+  width: 135px !important;
+  font-size: 11px !important;
+  word-break: break-all !important;
+}
+
+#devicesTable th:nth-child(4),
+#devicesTable td:nth-child(4) {
+  width: 95px !important;
+  white-space: nowrap !important;
+}
+
+#devicesTable th:nth-child(5),
+#devicesTable td:nth-child(5) {
+  width: 125px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#devicesTable th:nth-child(6),
+#devicesTable td:nth-child(6) {
+  width: 165px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#devicesTable th:nth-child(7),
+#devicesTable td:nth-child(7) {
+  width: 145px !important;
+  white-space: nowrap !important;
+  font-size: 12px !important;
+}
+
+#devicesTable th:nth-child(8),
+#devicesTable td:nth-child(8),
+#devicesTable th:nth-child(9),
+#devicesTable td:nth-child(9) {
+  width: 145px !important;
+  white-space: nowrap !important;
+  font-size: 12px !important;
+}
+
+#devicesTable th:nth-child(10),
+#devicesTable td:nth-child(10) {
+  width: 100px !important;
+  white-space: nowrap !important;
+}
+
+#devicesTable td:nth-child(10) button {
+  width: 76px !important;
+  min-width: 76px !important;
+  height: 40px !important;
+  white-space: nowrap !important;
+  padding: 6px 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#devicesTable td:nth-child(4) span {
+  white-space: nowrap !important;
+}
+
+.devices-table-scroll {
+  width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding-bottom: 8px !important;
+}
+
+@media (max-width: 1400px) {
+  #devicesTable {
+    width: 1250px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -112,7 +320,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 <h2>📥 تحميل HICHRAWI LIVE</h2>
 <p>النسخة النهائية الرسمية — الإصدار 2.5.0</p>
 
-<a href="https://github.com/hichrawi/HichrawiLIVE_Final_Android/releases/download/v2.5.0/hichrawi-live.apk"
+<a href="https://api.codemagic.io/artifacts/2fac3a24-f83f-4f20-9633-872242741196/5cd96bb5-5dfc-47b5-be44-73d8813eb494/app-release.apk"
    target="_blank"
    style="display:inline-block;background:#18a866;color:#fff;text-decoration:none;padding:14px 24px;border-radius:10px;font-weight:bold;margin:8px;">
    📥 تحميل APK مباشرة
@@ -122,7 +330,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px s
 <strong>📺 Downloader</strong>
 <p style="color:#aaa;">استعمل رابط APK التالي داخل تطبيق Downloader:</p>
 <div class="code" style="font-size:14px;word-break:break-all;">
-https://github.com/hichrawi/HichrawiLIVE_Final_Android/releases/download/v2.5.0/hichrawi-live.apk
+https://api.codemagic.io/artifacts/2fac3a24-f83f-4f20-9633-872242741196/5cd96bb5-5dfc-47b5-be44-73d8813eb494/app-release.apk
 </div>
 </div>
 </div>
@@ -131,7 +339,7 @@ https://github.com/hichrawi/HichrawiLIVE_Final_Android/releases/download/v2.5.0/
 <div class="panel" style="margin-bottom:18px">
 <h2>📱 تحميل HICHRAWI LIVE</h2>
 <p>النسخة النهائية الرسمية — Android و Android TV و X96Q</p>
-<a href="https://api.codemagic.io/artifacts/f86c9a90-f213-4079-bc6f-e4680815868f/77a383a9-142a-42d8-8dd7-43abe46f58bd/app-release.apk" target="_blank" rel="noopener" class="gold" style="display:inline-block;text-decoration:none">⬇️ تحميل آخر نسخة نهائية</a>
+<a href="https://api.codemagic.io/artifacts/2fac3a24-f83f-4f20-9633-872242741196/5cd96bb5-5dfc-47b5-be44-73d8813eb494/app-release.apk" target="_blank" rel="noopener" class="gold" style="display:inline-block;text-decoration:none">⬇️ تحميل آخر نسخة نهائية</a>
 </div>
 <section id="subscriptions" class="section">
 <div class="grid">

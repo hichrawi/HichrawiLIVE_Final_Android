@@ -132,8 +132,8 @@ h1{
  font-weight:800;
  font-size:18px;
  box-shadow:0 10px 30px rgba(139,53,255,.28);
- cursor:not-allowed;
- opacity:.75;
+ cursor:pointer;
+ opacity:1;
 }
 
 .download-note{
@@ -234,7 +234,7 @@ h1{
 
 <p class="desc">
 واجهة بسيطة وسريعة للوصول إلى قنوات HichrawiSport ومتابعة البث المباشر.
-النسخة الرسمية من التطبيق متوفرة لمستخدمي الهاتف والتلفاز، وسيتم تفعيل رابط التحميل الرسمي عند جاهزية النسخة النهائية.
+النسخة الرسمية النهائية متوفرة الآن لمستخدمي الهاتف والتلفاز.
 </p>
 
 <div class="features">
@@ -260,17 +260,15 @@ h1{
 
 <a
  class="btn"
- href="#"
- aria-disabled="true"
- onclick="return false;"
+ href="https://api.codemagic.io/artifacts/9e93b467-6748-4f82-9c6b-c5b0d28bbf85/7181def5-3533-4916-814c-a7a25daff7f4/app-release.apk"
 >
-⬇️ تحميل التطبيق
+⬇️ تحميل HICHRAWI LIVE
 </a>
 
 </div>
 
 <div class="download-note">
-رابط التحميل الرسمي سيتم تفعيله عند إصدار النسخة النهائية.
+النسخة النهائية HICHRAWI LIVE v2.5.0 متاحة الآن.
 </div>
 
 
@@ -336,45 +334,49 @@ h1{
 
   <button class="btn"
           style="cursor:pointer;opacity:1;border:0;"
-          onclick="generateDownloadCode()">
-    ⬇️ الحصول على كود التحميل
+          onclick="showDownloadCode()">
+    ⬇️ الحصول على كود Downloader
   </button>
 
   <div id="downloadCodeBox"
        style="display:none;margin-top:15px;">
     <small style="display:block;color:#bdb5c8;margin-bottom:8px;">
-      كود التحميل الخاص بك
+      كود Downloader
     </small>
     <div id="downloadCode"
          class="code"
          style="font-size:24px;">
+      8724196
+    </div>
+
+    <div style="margin-top:14px;">
+      <a href="https://api.codemagic.io/artifacts/9e93b467-6748-4f82-9c6b-c5b0d28bbf85/7181def5-3533-4916-814c-a7a25daff7f4/app-release.apk"
+         target="_blank"
+         style="display:inline-block;text-decoration:none;color:#fff;
+                background:#18a866;padding:13px 24px;border-radius:12px;">
+        📥 تحميل APK مباشرة
+      </a>
     </div>
   </div>
 
   <div style="margin-top:15px;">
-    <a href="#"
-       onclick="return false;"
+    <a href="https://api.codemagic.io/artifacts/9e93b467-6748-4f82-9c6b-c5b0d28bbf85/7181def5-3533-4916-814c-a7a25daff7f4/app-release.apk"
+       target="_blank"
        style="display:inline-block;text-decoration:none;color:#fff;
               background:#111;padding:13px 24px;border-radius:12px;
               border:1px solid rgba(193,108,255,.25);">
-      ▶ Google Play — قريبًا
+      📥 تحميل مباشر APK
     </a>
   </div>
 
   <div class="download-note">
-    سيتم تفعيل رابط Google Play بعد نشر التطبيق رسميًا.
+    استخدم Downloader مع رابط APK الرسمي أو كود Downloader: 8724196
   </div>
 </div>
 
 <script>
-function generateDownloadCode(){
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "HICH-";
-  for(let i=0;i<8;i++){
-    code += chars[Math.floor(Math.random()*chars.length)];
-  }
-
-  document.getElementById("downloadCode").textContent = code;
+function showDownloadCode(){
+  document.getElementById("downloadCode").textContent = "8724196";
   document.getElementById("downloadCodeBox").style.display = "block";
 }
 </script>
