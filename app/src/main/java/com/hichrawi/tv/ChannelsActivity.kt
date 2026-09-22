@@ -261,7 +261,7 @@ class ChannelsActivity : AppCompatActivity() {
         allPackages.forEachIndexed { index, pkg ->
             row.addView(
                 packageCard(pkg, index),
-                LinearLayout.LayoutParams(245, 315).apply {
+                LinearLayout.LayoutParams(245, 350).apply {
                     setMargins(18, 10, 18, 10)
                 }
             )
@@ -395,27 +395,38 @@ class ChannelsActivity : AppCompatActivity() {
 
         card.addView(
             logoFrame,
-            LinearLayout.LayoutParams(205, 205).apply {
-                setMargins(0, 5, 0, 12)
+            LinearLayout.LayoutParams(180, 180).apply {
+                setMargins(0, 4, 0, 8)
             }
         )
 
+        val packageNameView = tv(
+            pkg.name,
+            21f,
+            text,
+            true,
+            Gravity.CENTER
+        ).apply {
+            includeFontPadding = false
+            maxLines = 2
+            ellipsize = null
+        }
+
         card.addView(
-            tv(
-                pkg.name,
-                22f,
-                text,
-                true
-            ),
-            LinearLayout.LayoutParams(-1, 48)
+            packageNameView,
+            LinearLayout.LayoutParams(-1, 60)
         )
 
         card.addView(
             tv(
                 pkg.channels.size.toString() + " قناة",
                 14f,
-                muted
-            ),
+                muted,
+                false,
+                Gravity.CENTER
+            ).apply {
+                includeFontPadding = false
+            },
             LinearLayout.LayoutParams(-1, 30)
         )
 
@@ -438,7 +449,7 @@ class ChannelsActivity : AppCompatActivity() {
             showLive()
         }
 
-        title.text = selectedPackage.name
+        title.text = "LIVE TV"
         content.removeAllViews()
 
         /*
@@ -462,15 +473,21 @@ class ChannelsActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_VERTICAL
         }
 
+        val packageTitle = tv(
+            selectedPackage.name,
+            23f,
+            text,
+            true,
+            Gravity.START or Gravity.CENTER_VERTICAL
+        ).apply {
+            includeFontPadding = false
+            maxLines = 2
+            ellipsize = null
+        }
+
         headerInfo.addView(
-            tv(
-                selectedPackage.name,
-                25f,
-                text,
-                true,
-                Gravity.START or Gravity.CENTER_VERTICAL
-            ),
-            LinearLayout.LayoutParams(-1, 38)
+            packageTitle,
+            LinearLayout.LayoutParams(-1, 50)
         )
 
         headerInfo.addView(
@@ -480,13 +497,15 @@ class ChannelsActivity : AppCompatActivity() {
                 muted,
                 false,
                 Gravity.START or Gravity.CENTER_VERTICAL
-            ),
-            LinearLayout.LayoutParams(-1, 28)
+            ).apply {
+                includeFontPadding = false
+            },
+            LinearLayout.LayoutParams(-1, 24)
         )
 
         header.addView(
             headerInfo,
-            LinearLayout.LayoutParams(0, 66, 1f)
+            LinearLayout.LayoutParams(0, 76, 1f)
         )
 
         header.addView(

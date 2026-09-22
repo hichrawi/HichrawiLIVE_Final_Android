@@ -530,24 +530,27 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
 
         titleBox.addView(TextView(this).apply {
             text = packageName
-            textSize = 22f
+            textSize = 21f
             setTextColor(Color.WHITE)
             setTypeface(typeface, Typeface.BOLD)
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            maxLines = 1
+            includeFontPadding = true
+            maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
-        }, LinearLayout.LayoutParams(-1, 34))
+        }, LinearLayout.LayoutParams(-1, 48))
 
         titleBox.addView(TextView(this).apply {
             text = "قنوات الباقة • ${packageChannels.size}"
             textSize = 13f
             setTextColor(0xFFC4B8D6.toInt())
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
-        }, LinearLayout.LayoutParams(-1, 26))
+            includeFontPadding = true
+            maxLines = 1
+        }, LinearLayout.LayoutParams(-1, 24))
 
         header.addView(
             titleBox,
-            LinearLayout.LayoutParams(0, 62, 1f)
+            LinearLayout.LayoutParams(0, 76, 1f)
         )
 
         header.addView(TextView(this).apply {
@@ -565,7 +568,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
 
         panel.addView(
             header,
-            LinearLayout.LayoutParams(-1, 66)
+            LinearLayout.LayoutParams(-1, 82)
         )
 
         val list = RecyclerView(this).apply {
@@ -624,7 +627,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
             val row = LinearLayout(this@PlayerActivity).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(12, 7, 12, 7)
+                setPadding(12, 4, 12, 4)
 
                 background = android.graphics.drawable.GradientDrawable().apply {
                     setColor(0xB5221A31.toInt())
@@ -634,7 +637,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
                 isFocusable = true
                 isClickable = true
                 stateListAnimator = null
-                minimumHeight = 64
+                minimumHeight = 72
             }
 
             return Holder(row)
@@ -659,7 +662,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
 
             row.addView(
                 number,
-                LinearLayout.LayoutParams(42, 56)
+                LinearLayout.LayoutParams(42, 64)
             )
 
             val image = ImageView(this@PlayerActivity).apply {
@@ -669,7 +672,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
 
             row.addView(
                 image,
-                LinearLayout.LayoutParams(58, 56).apply {
+                LinearLayout.LayoutParams(58, 64).apply {
                     setMargins(4, 0, 8, 0)
                 }
             )
@@ -680,14 +683,17 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
                 setTextColor(Color.WHITE)
                 setTypeface(typeface, Typeface.BOLD)
                 gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                includeFontPadding = false
+                includeFontPadding = true
                 maxLines = 2
-                ellipsize = null
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setLineSpacing(0f, 1.0f)
             }
 
             row.addView(
                 name,
-                LinearLayout.LayoutParams(0, 60, 1f)
+                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).apply {
+                    setMargins(4, 0, 4, 0)
+                }
             )
 
             row.addView(TextView(this@PlayerActivity).apply {
@@ -695,7 +701,7 @@ class PlayerActivity : AppCompatActivity(), IVLCVout.Callback {
                 textSize = 12f
                 setTextColor(0xFF65D99A.toInt())
                 gravity = Gravity.CENTER
-            }, LinearLayout.LayoutParams(30, 56))
+            }, LinearLayout.LayoutParams(30, 64))
 
             fun normalBackground() =
                 android.graphics.drawable.GradientDrawable().apply {
